@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# 模型权重不入库（体积大，见 THIRD_PARTY_LICENSES.md 获取方式）
+models/*.onnx
+
+# 实验与构建产物
+# 注意：build/pixtrace.spec 与 build/installer.iss 是源文件，必须入库；
+# 只忽略 PyInstaller 的中间产物（build/pixtrace/）
+.probe/
+.shots/
+demo/
+build/pixtrace/
+build/nobg/
+build/*.log
+dist/
+output/

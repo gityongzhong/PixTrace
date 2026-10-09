@@ -5,8 +5,8 @@
 所以这里也没有筛选器、没有重跑按钮：失败的项在列表里标红，直接再点一次「开始处理」
 就会重新处理（规划阶段会跳过已成功生成的输出）。
 
-布局自上而下：工具条 → [大拖拽区 ⇄ 任务列表] → 设置面板（含开始/取消） → 底部链接条。
-没有菜单栏：文件类操作在工具条左侧，模型管理 / 关于等在工具条右侧「设置」菜单里。
+布局自上而下：工具条 → [大拖拽区 ⇄ 任务列表] → 设置面板 → 动作行（状态/进度/取消/开始处理）
+→ 底部链接条。没有菜单栏：文件类操作在工具条左侧，模型管理 / 关于等在工具条右侧「设置」菜单里。
 列表为空时 44px 提示条隐藏，整块内容区由 DropArea 接管。
 """
 
@@ -211,27 +211,38 @@ class MainWindow(QMainWindow):
         effects.add_card_shadow(self.settings_panel)
         wrap.addWidget(self.settings_panel)
 
-        # 状态、进度与动作按钮都贴在设置面板行尾：选完参数手边就是「开始处理」，
-        # 底部整行留给 GitHub 链接与赞赏码
+        # 状态 + 进度 + 动作单独占一排：挤在设置行尾会把「保存到」压得没地方，
+        # 参数与动作分开也更符合阅读顺序（先选参数，再动手）
+        self.action_row = QFrame()
+        self.action_row.setProperty("role", "panel")
+        effects.add_card_shadow(self.action_row)
+        action_row = QHBoxLayout(self.action_row)
+        action_row.setContentsMargins(12, 8, 12, 8)
+        action_row.setSpacing(12)
+
         self.status_label = QLabel("就绪")
         self.status_label.setProperty("role", "hint")
-        self.status_label.setMaximumWidth(320)
+        self.status_label.setMinimumWidth(150)
+        self.status_label.setMaximumWidth(340)
 
         self.progress = QProgressBar()
         self.progress.setRange(0, 100)
         self.progress.setValue(0)
         self.progress.setTextVisible(False)
-        self.progress.setFixedSize(QSize(180, 8))
+        self.progress.setFixedSize(QSize(220, 8))
 
         self.cancel_button = QPushButton("取消")
         self.cancel_button.setEnabled(False)
         self.start_button = QPushButton("开始处理")
         self.start_button.setProperty("role", "primary")
         self.start_button.setMinimumWidth(104)
-        self.settings_panel.append_action(self.status_label)
-        self.settings_panel.append_action(self.progress)
-        self.settings_panel.append_action(self.cancel_button)
-        self.settings_panel.append_action(self.start_button)
+
+        action_row.addWidget(self.status_label)
+        action_row.addWidget(self.progress, 0, Qt.AlignVCenter)
+        action_row.addStretch(1)
+        action_row.addWidget(self.cancel_button)
+        action_row.addWidget(self.start_button)
+        wrap.addWidget(self.action_row)
 
         self.action_bar = FooterBar()
         effects.add_card_shadow(self.action_bar)

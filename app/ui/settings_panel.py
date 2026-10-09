@@ -10,7 +10,8 @@
 
 这些策略都写在 build_options() 里，想改只需改这一处。
 
-进度与执行按钮由主窗口通过 append_action() 追加到本面板行尾，这里只管参数。
+本面板只管参数：状态文字、进度条与执行按钮在主窗口的独立动作行里
+（挤在这一行行尾会把「保存到」压得没地方，也不符合「先选参数再动手」的顺序）。
 """
 
 from __future__ import annotations
@@ -59,8 +60,7 @@ class SettingsPanel(QFrame):
 
     # ------------------------------------------------------------ 构建
     def _build(self) -> None:
-        self._row = QHBoxLayout(self)
-        row = self._row
+        row = QHBoxLayout(self)
         row.setContentsMargins(12, 9, 12, 9)
         row.setSpacing(10)
 
@@ -98,13 +98,6 @@ class SettingsPanel(QFrame):
         line.setProperty("role", "separator")
         line.setFixedSize(1, 18)
         return line
-
-    def append_action(self, widget: QWidget) -> None:
-        """把动作按钮（取消 / 开始处理）追加到面板行尾。
-
-        布局上位于 stretch 之后，即始终贴最右端；由主窗口在构建时调用。
-        """
-        self._row.addWidget(widget)
 
     # ------------------------------------------------------------ 交互
     def _connect(self) -> None:

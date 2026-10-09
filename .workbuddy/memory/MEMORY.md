@@ -36,6 +36,14 @@
 
 ### 当前进度（2026-10-09 更新）
 
+- **v0.3.7 界面质感改造（A+B 档，用户确认后实施）**：冷灰新色板（面板/底亮度差 3%→8%）、
+  面板与按钮顶部 1px 高光、统一圆角（8/6）、按钮 30px 高、主按钮边缘高光、渐变进度条、
+  拖拽区虚线→实线、列表行高 30 + 凹槽底 + 悬停高亮（去交替行）、耗时列等宽字体、
+  空状态图标渐变圆角小卡；新增 app/ui/effects.py（QGraphicsDropShadowEffect：
+  卡片级 radius10 会被父级裁剪、弹出层 radius22 用于 QMenu）。QSS 坑：
+  QPushButton 全局 focus 蓝框会常亮（删）；::item:selected 加 border-left 会让列间竖线（删）。
+- **项目已 git init**（基线 21a65b1 = v0.3.6；v0.3.7 = 9340360）。.gitignore 排除
+  models/*.onnx、dist/、build/pixtrace/、.shots/、demo/。**此后大改 UI 先提交再改。**
 - **v0.3.6 默认窗口 860×560**（=最小尺寸）。主窗口其实一直有几何记忆（window/geometry）；
   默认尺寸一改，记忆键必须翻代（geometry → geometry2，_restore_state 删旧键），
   否则老用户存的 1080×720 会盖掉新默认。

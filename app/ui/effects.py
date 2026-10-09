@@ -33,11 +33,15 @@ def add_shadow(
     return effect
 
 
-def add_card_shadow(widget: QWidget, radius: int = 10, dy: int = 3):
-    """卡片级投影：面板、底部条、空状态拖拽区。"""
-    return add_shadow(widget, radius=radius, dy=dy, alpha=105)
+def add_card_shadow(widget: QWidget, radius: int = 9, dy: int = 2):
+    """卡片级投影：面板、底部条、空状态拖拽区。
+
+    alpha 压到 65：暗色底下 100 以上的黑投影会在卡片四周糊出一圈明显的黑边，
+    反而显得脏。投影只需要一层存在感很弱的过渡。
+    """
+    return add_shadow(widget, radius=radius, dy=dy, alpha=65)
 
 
 def add_popup_shadow(widget: QWidget):
     """弹出层投影：菜单、下拉列表。"""
-    return add_shadow(widget, radius=22, dy=6, alpha=150)
+    return add_shadow(widget, radius=20, dy=5, alpha=110)

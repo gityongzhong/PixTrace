@@ -25,30 +25,40 @@ UI_FONT = (
 MONO_FONT = '"Cascadia Mono", "Consolas", monospace'
 
 # ---------------------------------------------------------------- 色板
-BG = "#1a1c20"          # 窗体底
-BG_PANEL = "#262930"    # 面板 / 卡片
-BG_CARD = "#262930"
-BG_WELL = "#17181c"     # 凹槽：列表 / 表头（比窗体底更深）
-BG_INPUT = "#2b2e35"
-BG_FILL = "#2b2e35"     # 次级填充：进度槽、悬停底
-BG_HOVER = "#31353d"
-BG_PRESSED = "#383d46"
-BTN_HOVER = "#31353d"
-BG_SELECTED = "#2b4a7d"  # 列表选中
-BORDER = "#33363d"
-BORDER_STRONG = "#3d414a"
-BORDER_HOVER = "#4a4f59"
-HILIGHT = "#3a3f49"     # 卡片顶部 1px 高光
-HILIGHT_STRONG = "#4a505c"  # 按钮/输入顶部 1px 高光
-TEXT = "#d6d7db"
-TEXT_DIM = "#9aa0ab"
+# v0.3.9 收敛过一轮对比度：上一版的边框/高光/强调色都比底色亮太多，几块卡片
+# 像"贴"在底上。这里把色阶差整体压小一档——层次还在，但不抢眼。
+BG = "#1d1f23"          # 窗体底
+BG_PANEL = "#24272d"    # 面板 / 卡片
+BG_CARD = "#24272d"
+BG_WELL = "#1b1d21"     # 凹槽：列表 / 表头（比窗体底稍深，不再挖得很深）
+BG_DROP = "#22252b"     # 空状态拖拽区：比面板只亮一档
+BG_DROP_ACTIVE = "#202c3f"
+BG_INPUT = "#2a2d33"
+BG_FILL = "#2a2d33"     # 次级填充：进度槽、悬停底
+BG_HOVER = "#2f333a"
+BG_PRESSED = "#353941"
+BTN_HOVER = "#2f333a"
+BG_SELECTED = "#283d5e"  # 列表选中（降饱和，别在深底上烧起来）
+BORDER = "#2e3238"
+BORDER_STRONG = "#383c43"
+BORDER_HOVER = "#454a53"
+HILIGHT = "#343841"     # 卡片顶部 1px 高光：只比边框亮一点
+HILIGHT_STRONG = "#41464f"  # 按钮/输入顶部 1px 高光
+BG_DISABLED = "#22252a"  # 禁用控件：几乎融进面板
+BORDER_DISABLED = "#2b2e34"
+BG_GLYPH_TOP = "#272b35"  # 空状态图标小卡
+BG_GLYPH_BOTTOM = "#212530"
+BORDER_GLYPH = "#333846"
+HILIGHT_GLYPH = "#3f4553"
+TEXT = "#cfd1d6"
+TEXT_DIM = "#949aa5"
 TEXT_FAINT = "#6b7280"
 TEXT_ON_ACCENT = "#ffffff"
-ACCENT = "#3d7df0"
-ACCENT_HOVER = "#5b93f5"
-ACCENT_PRESSED = "#2f68d8"
-ACCENT_SOFT = "#2b4a7d"
-ACCENT_HILIGHT = "#86b4ff"
+ACCENT = "#4171cd"      # 比上一版的 #3d7df0 降了一档饱和与亮度
+ACCENT_HOVER = "#5785da"
+ACCENT_PRESSED = "#355fb3"
+ACCENT_SOFT = "#283d5e"
+ACCENT_HILIGHT = "#729adf"
 OK = "#4ec9b0"
 WARN = "#d9b36c"
 ERR = "#f28b82"
@@ -59,13 +69,13 @@ PREVIEW_BG = "#151619"
 CHECKER_LIGHT = "#3a3d44"   # 预览窗透明区棋盘格
 CHECKER_DARK = "#2c2f35"
 
-# 主窗口中央区：极淡的纵向渐变，避免整块死平的底色
-SURFACE_TOP = "#1f2229"
-SURFACE_BOTTOM = "#17181c"
+# 主窗口中央区：极淡的纵向渐变（比上一版跨度更小，几乎察觉不到但不再是死平的底色）
+SURFACE_TOP = "#212429"
+SURFACE_BOTTOM = "#1a1c20"
 
-FOCUS_RING = "rgba(61, 125, 240, 0.45)"
-TRACK = "rgba(255, 255, 255, 0.07)"
-ROW_HOVER = "rgba(255, 255, 255, 0.05)"
+FOCUS_RING = "rgba(65, 113, 205, 0.45)"
+TRACK = "rgba(255, 255, 255, 0.06)"
+ROW_HOVER = "rgba(255, 255, 255, 0.04)"
 
 STATUS_COLORS = {
     "等待": TEXT_FAINT,
@@ -148,27 +158,27 @@ QFrame[role="dropbar"] {{
 }}
 QFrame[role="dropbar"][active="true"] {{
     border: 1px solid {ACCENT};
-    background-color: #223047;
+    background-color: {BG_DROP_ACTIVE};
 }}
 
 /* 空状态整块拖拽区：实线 + 比面板亮一档的底，虚线是「低保真」观感的主要来源 */
 QFrame[role="droparea"] {{
-    background-color: #23262d;
+    background-color: {BG_DROP};
     border: 1px solid {BORDER_STRONG};
     border-top-color: {HILIGHT_STRONG};
     border-radius: 10px;
 }}
 QFrame[role="droparea"][active="true"] {{
     border: 1px solid {ACCENT};
-    background-color: #223047;
+    background-color: {BG_DROP_ACTIVE};
 }}
 
 /* 空状态图标底：一块带渐变的圆角小卡，图标不再裸放在空底上 */
 QFrame[role="glyphbox"] {{
     background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                stop:0 #2c3342, stop:1 #232833);
-    border: 1px solid #3d4453;
-    border-top-color: #4d5668;
+                stop:0 {BG_GLYPH_TOP}, stop:1 {BG_GLYPH_BOTTOM});
+    border: 1px solid {BORDER_GLYPH};
+    border-top-color: {HILIGHT_GLYPH};
     border-radius: 18px;
 }}
 
@@ -192,9 +202,9 @@ QPushButton:pressed {{
 }}
 QPushButton:disabled {{
     color: {TEXT_FAINT};
-    background-color: #23262c;
-    border-color: #2c2f36;
-    border-top-color: #2c2f36;
+    background-color: {BG_DISABLED};
+    border-color: {BORDER_DISABLED};
+    border-top-color: {BORDER_DISABLED};
 }}
 /* 不给 QPushButton 全局 focus 描边：开局焦点落在「添加图片」上会常亮一整块蓝，
    像被误选中；focus 反馈交给输入类控件 */
@@ -246,9 +256,9 @@ QPushButton[role="primary"]:pressed {{
     border-color: {ACCENT_PRESSED};
 }}
 QPushButton[role="primary"]:disabled {{
-    background-color: #2a2d34;
-    border-color: #343841;
-    border-top-color: #3b3f49;
+    background-color: {BG_DISABLED};
+    border-color: {BORDER_DISABLED};
+    border-top-color: {HILIGHT};
     color: {TEXT_FAINT};
 }}
 
@@ -343,7 +353,7 @@ QHeaderView::section {{
     background-color: {BG_WELL};
     color: {TEXT_FAINT};
     border: none;
-    border-bottom: 1px solid #2c2f36;
+    border-bottom: 1px solid {BORDER};
     padding: 7px 10px;
     font-size: 12px;
 }}

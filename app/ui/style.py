@@ -150,28 +150,13 @@ QFrame[role="separator"] {{
     background-color: {BORDER};
     border: none;
 }}
-QFrame[role="dropbar"] {{
-    background-color: {BG_PANEL};
-    border: 1px solid {BORDER_STRONG};
-    border-top-color: {HILIGHT_STRONG};
-    border-radius: 8px;
-}}
-QFrame[role="dropbar"][active="true"] {{
-    border: 1px solid {ACCENT};
-    background-color: {BG_DROP_ACTIVE};
-}}
-
-/* 空状态整块拖拽区：实线 + 比面板亮一档的底，虚线是「低保真」观感的主要来源 */
-QFrame[role="droparea"] {{
-    background-color: {BG_DROP};
-    border: 1px solid {BORDER_STRONG};
-    border-top-color: {HILIGHT_STRONG};
-    border-radius: 10px;
-}}
-QFrame[role="droparea"][active="true"] {{
-    border: 1px solid {ACCENT};
-    background-color: {BG_DROP_ACTIVE};
-}}
+/* ---------- 拖拽条 / 空状态拖拽区 ----------
+   这两块的底色与边框**不在这里**：它们由 paintEvent 自绘（app/ui/anim.py 的
+   paint_tint_frame）。原因很实在——QSS 的状态切换是瞬时硬切，插不出过渡的
+   中间色，拖拽悬停时会「啪」地跳一下。
+   这里刻意不再声明 background / border：声明了也只会叠在自绘结果上。
+   自绘用的色号：BG_PANEL / BG_DROP（常态）→ BG_DROP_ACTIVE（悬停），
+   边框 BORDER_STRONG → ACCENT，顶部高光 HILIGHT_STRONG → ACCENT。 */
 
 /* 空状态图标底：一块带渐变的圆角小卡，图标不再裸放在空底上 */
 QFrame[role="glyphbox"] {{

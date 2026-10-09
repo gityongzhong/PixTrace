@@ -21,9 +21,10 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from . import style
+from . import anim, style
 
 GLYPH = 60
+CORNER = 10  # 与 style.py 里 droparea 的圆角一致
 DEFAULT_TITLE = "把图片或文件夹拖到这里"
 DEFAULT_HINT = "支持 PNG / JPG / WebP / BMP / TIFF · 可一次拖入整个文件夹"
 
@@ -65,8 +66,14 @@ class DropArea(QFrame):
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
+        # role 只作标识：底色/边框已经改由 paintEvent 自绘（QSS 里同名声明已删），
+        # 因为 QSS 的 [active="true"] 是硬切，插不出中间色
         self.setProperty("role", "droparea")
         self.setAcceptDrops(False)
+
+        # 拖拽悬停的过渡进度：0 = 常态，1 = 高亮，颜色由 paint_tint_frame 插值
+        self._tint = anim.TintAnimation(self)
+        self._tint.changed.connect(self._on_tint)
 
         column = QVBoxLayout(self)
         column.setContentsMargins(24, 24, 24, 24)
@@ -111,11 +118,30 @@ class DropArea(QFrame):
 
         column.addStretch(1)
 
+    def _on_tint(self, _value: float) -> None:
+        self.update()
+
     def set_active(self, active: bool) -> None:
-        """拖拽悬停时整块区域加重描边。"""
-        self.setProperty("active", "true" if active else "false")
-        self.style().unpolish(self)
-        self.style().polish(self)
+        """拖拽悬停：边框与底色渐变过去。
+
+        旧实现是 setProperty("active") + unpolish/polish，颜色是硬切的，
+        拖进来时会「啪」地跳一下；现在交给 TintAnimation 插值。
+        """
+        self._tint.to(1.0 if active else 0.0)
+
+    def paintEvent(self, event) -> None:  # noqa: N802, ARG002
+        # 不调 super().paintEvent()：QSS 的背景会和自己画的叠在一起
+        anim.paint_tint_frame(
+            self,
+            tint=self._tint.value,
+            radius=CORNER,
+            idle_bg=style.BG_DROP,
+            active_bg=style.BG_DROP_ACTIVE,
+            idle_border=style.BORDER_STRONG,
+            active_border=style.ACCENT,
+            idle_top=style.HILIGHT_STRONG,
+            active_top=style.ACCENT,
+        )
 
     def set_message(self, title: str, hint: str) -> None:
         self.title_label.setText(title)

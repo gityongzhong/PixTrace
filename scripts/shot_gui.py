@@ -29,7 +29,7 @@ WALLPAPERS = [
 
 
 def main() -> int:
-    from PySide6.QtCore import QSettings, QTimer
+    from PySide6.QtCore import QEventLoop, QSettings, QTimer
     from PySide6.QtWidgets import QApplication
 
     from app.ui import style
@@ -63,7 +63,18 @@ def main() -> int:
     app.processEvents()
     size_tag = f"_{window.width()}x{window.height()}"
 
+    def settle(ms: int = 320) -> None:
+        """等过渡动画跑完再截图。
+
+        只调 processEvents() 是推进一帧就返回，150~200ms 的淡入 / 数值滚动会
+        截到中间态：状态文字半透明、进度条还没滚到位置。
+        """
+        loop = QEventLoop()
+        QTimer.singleShot(ms, loop.quit)
+        loop.exec()
+
     def save(widget, name: str) -> None:
+        settle()
         app.processEvents()
         path = OUT_DIR / f"{name}{size_tag}.png"
         widget.grab().save(str(path))
@@ -73,6 +84,15 @@ def main() -> int:
 
     if scene in ("all", "empty"):
         steps.append(lambda: save(window, "01_empty"))
+
+    if scene in ("all", "hover"):
+        def hover() -> None:
+            # 拖拽悬停态：验证自绘的过渡表面（边框 + 底色 + 顶部高光）画对了没有
+            window._set_drop_highlight(True)
+            save(window, "06_drop_hover")
+            window._set_drop_highlight(False)
+
+        steps.append(hover)
 
     if scene in ("all", "loaded"):
         def loaded() -> None:

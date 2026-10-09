@@ -45,7 +45,7 @@ from ..batch.planner import build_tasks
 from ..core.models import DEFAULT_MODEL_KEY, resolve_model
 from ..core.types import JobOptions, Task, TaskStatus
 from ..infra import model_store, paths
-from . import effects, style
+from . import anim, effects, style
 from .controller import BatchController, status_of
 from .dropzone import DEFAULT_HINT as DEFAULT_DROP_HINT
 from .dropzone import DEFAULT_TITLE as DEFAULT_DROP_TITLE
@@ -79,10 +79,17 @@ _STATUS_HEX = {
 
 
 class DropBar(QFrame):
-    """44px 的拖拽提示条。拖拽事件在主窗口处理，这里只负责显示。"""
+    """44px 的拖拽提示条。拖拽事件在主窗口处理，这里只负责显示。
+
+    底色与边框自绘（style.py 里同名的 QSS 声明已删）：悬停时要渐变过去，
+    而 QSS 的 [active="true"] 只会瞬时切换，插不出中间色。
+    """
+
+    CORNER = 8
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
+        # role 只作标识，实际样式见 paintEvent
         self.setProperty("role", "dropbar")
         self.setFixedHeight(44)
         row = QHBoxLayout(self)
@@ -91,10 +98,28 @@ class DropBar(QFrame):
         self.label.setAlignment(Qt.AlignCenter)
         row.addWidget(self.label)
 
+        self._tint = anim.TintAnimation(self)
+        self._tint.changed.connect(self._on_tint)
+
+    def _on_tint(self, _value: float) -> None:
+        self.update()
+
     def set_active(self, active: bool) -> None:
-        self.setProperty("active", "true" if active else "false")
-        self.style().unpolish(self)
-        self.style().polish(self)
+        self._tint.to(1.0 if active else 0.0)
+
+    def paintEvent(self, event) -> None:  # noqa: N802, ARG002
+        # 不调 super().paintEvent()，否则 QSS 背景会叠在自绘结果上
+        anim.paint_tint_frame(
+            self,
+            tint=self._tint.value,
+            radius=self.CORNER,
+            idle_bg=style.BG_PANEL,
+            active_bg=style.BG_DROP_ACTIVE,
+            idle_border=style.BORDER_STRONG,
+            active_border=style.ACCENT,
+            idle_top=style.HILIGHT_STRONG,
+            active_top=style.ACCENT,
+        )
 
     def set_message(self, text: str) -> None:
         self.label.setText(text)
@@ -224,12 +249,17 @@ class MainWindow(QMainWindow):
         self.status_label.setProperty("role", "hint")
         self.status_label.setMinimumWidth(150)
         self.status_label.setMaximumWidth(340)
+        # 文字每次换内容时淡入一下，替代原来的「啪」一下换字。
+        # 起始透明度不给 0，进度更新时每秒会重播好几次，全透明会变成闪烁。
+        self._status_fade = anim.fade_in(self.status_label, start=0.45)
 
         self.progress = QProgressBar()
         self.progress.setRange(0, 100)
         self.progress.setValue(0)
         self.progress.setTextVisible(False)
         self.progress.setFixedSize(QSize(220, 8))
+        # 进度值滚动过去，而不是一格一格地蹦
+        self._progress_roll = anim.ValueRoller(self.progress, "value", self)
 
         self.cancel_button = QPushButton("取消")
         self.cancel_button.setEnabled(False)
@@ -516,7 +546,7 @@ class MainWindow(QMainWindow):
         self._task_map = {str(t.src): t for t in self._tasks}
         self._refresh_list()
         self.progress.setRange(0, len(self._tasks))
-        self.progress.setValue(0)
+        self._progress_roll.snap(0)  # 上一轮的滚动可能还没跑完，直接归零并停表
         self._started_at = time.perf_counter()
         self._set_running(True)
         self._set_status("正在加载模型…")
@@ -561,7 +591,7 @@ class MainWindow(QMainWindow):
 
     def _on_progress(self, done: int, total: int, task: Task) -> None:
         self.progress.setMaximum(max(1, total))
-        self.progress.setValue(done)
+        self._progress_roll.roll_to(done)
         self._sync_task(task)
         self._update_row(task)
 
@@ -574,7 +604,8 @@ class MainWindow(QMainWindow):
 
     def _on_finished(self, report) -> None:
         self._set_running(False)
-        self.progress.setValue(self.progress.maximum())
+        # 直接到位：留着滚动动画的话，进度条会在「已完成」的文字下慢慢爬最后一格
+        self._progress_roll.snap(self.progress.maximum())
         self._set_status(
             f"完成 {report.done} · 失败 {report.failed}"
             f" · 总耗时 {report.elapsed_ms / 1000:.1f}s"
@@ -593,6 +624,7 @@ class MainWindow(QMainWindow):
 
     def _on_failed(self, message: str) -> None:
         self._set_running(False)
+        self._progress_roll.stop()
         self._set_status("处理中断")
         QMessageBox.critical(self, "处理失败", message)
 
@@ -675,8 +707,19 @@ class MainWindow(QMainWindow):
         dialog.exec()
 
     def _set_status(self, text: str) -> None:
+        """更新状态文字，并让它淡入一次。
+
+        文字没变就不重播动画：进度回调会反复给出同样的文字，否则同一句会被
+        反复点亮，看着像闪。起始值固定 0.45 而不是当前值——文字更新很密时
+        （每张图一次），从当前值续着淡会越来越看不出，反而不稳定。
+        """
+        if text == self.status_label.text():
+            return
         self.status_label.setText(text)
         self.status_label.setToolTip(text)
+        if self.isVisible():
+            self._status_fade.stop()
+            self._status_fade.start()
 
     @staticmethod
     def _format_duration(seconds: float) -> str:

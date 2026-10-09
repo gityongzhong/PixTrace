@@ -34,7 +34,7 @@ from PySide6.QtWidgets import (
 
 from ..core.models import DEFAULT_MODEL_KEY
 from ..core.types import BackgroundKind, BackgroundSpec, JobOptions, OutputFormat
-from . import style
+from . import effects, style
 
 DEFAULT_BG_COLOR = (255, 255, 255)
 DEST_ALONGSIDE = "alongside"
@@ -161,6 +161,7 @@ class SettingsPanel(QFrame):
 
     def _show_dest_menu(self) -> None:
         menu = QMenu(self)
+        effects.add_popup_shadow(menu)
         act_alongside = menu.addAction("与原图同一文件夹")
         act_custom = menu.addAction("选择文件夹…")
         chosen = menu.exec(

@@ -81,6 +81,9 @@ def main() -> int:
             window.progress.setRange(0, len(existing))
             window.progress.setValue(max(0, len(existing) - 2))
             window._set_status("3/5 · 平均 1.15s/张 · 剩余约 2 秒")
+            # 选中一行，让截图带上选中态（左侧强调条 + 柔和蓝底）
+            if window.tree.topLevelItemCount() > 1:
+                window.tree.setCurrentItem(window.tree.topLevelItem(1))
             save(window, "02_loaded")
 
         steps.append(loaded)

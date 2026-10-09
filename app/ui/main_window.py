@@ -45,7 +45,7 @@ from ..batch.planner import build_tasks
 from ..core.models import DEFAULT_MODEL_KEY, resolve_model
 from ..core.types import JobOptions, Task, TaskStatus
 from ..infra import model_store, paths
-from . import style
+from . import effects, style
 from .controller import BatchController, status_of
 from .dropzone import DEFAULT_HINT as DEFAULT_DROP_HINT
 from .dropzone import DEFAULT_TITLE as DEFAULT_DROP_TITLE
@@ -58,7 +58,7 @@ COLUMNS = ("文件", "状态", "耗时")
 SRC_ROLE = Qt.UserRole
 REPLAN_DELAY_MS = 200
 TITLE = "PixTrace · 去背景"
-ROW_HEIGHT = 26
+ROW_HEIGHT = 30
 DEFAULT_SIZE = (860, 560)  # 开窗尺寸
 MIN_SIZE = (860, 560)  # 下限，再小设置行会挤到换行
 GEOMETRY_KEY = "window/geometry2"  # 尾号跟默认尺寸策略走，改尺寸就 +1
@@ -168,10 +168,14 @@ class MainWindow(QMainWindow):
     # ------------------------------------------------------------------ UI
     def _build_ui(self) -> None:
         central = QWidget()
+        # 渐变底挂在中央区（QSS 的 qlineargradient），纯 QWidget 需要显式开启
+        # WA_StyledBackground 才会去画样式表里的背景
+        central.setObjectName("surface")
+        central.setAttribute(Qt.WA_StyledBackground, True)
         self.setCentralWidget(central)
         wrap = QVBoxLayout(central)
-        wrap.setContentsMargins(8, 0, 8, 8)
-        wrap.setSpacing(8)
+        wrap.setContentsMargins(10, 0, 10, 10)
+        wrap.setSpacing(9)
 
         wrap.addWidget(self._build_toolbar())
 
@@ -182,7 +186,8 @@ class MainWindow(QMainWindow):
         self.tree.setHeaderLabels(list(COLUMNS))
         self.tree.setRootIsDecorated(False)
         self.tree.setUniformRowHeights(True)
-        self.tree.setAlternatingRowColors(True)
+        # 交替行底色与列表底只差几个灰阶，看着只是脏，改用悬停高亮区分
+        self.tree.setAlternatingRowColors(False)
         self.tree.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.tree.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.tree.setEditTriggers(QAbstractItemView.NoEditTriggers)
@@ -196,12 +201,14 @@ class MainWindow(QMainWindow):
 
         # 列表为空时整块内容区就是拖拽区，有输入后换成任务列表
         self.drop_area = DropArea()
+        effects.add_card_shadow(self.drop_area, radius=14, dy=4)
         self.center_stack = QStackedWidget()
         self.center_stack.addWidget(self.drop_area)
         self.center_stack.addWidget(self.tree)
         wrap.addWidget(self.center_stack, 1)
 
         self.settings_panel = SettingsPanel()
+        effects.add_card_shadow(self.settings_panel)
         wrap.addWidget(self.settings_panel)
 
         # 状态、进度与动作按钮都贴在设置面板行尾：选完参数手边就是「开始处理」，
@@ -227,6 +234,7 @@ class MainWindow(QMainWindow):
         self.settings_panel.append_action(self.start_button)
 
         self.action_bar = FooterBar()
+        effects.add_card_shadow(self.action_bar)
         wrap.addWidget(self.action_bar)
 
         self._build_actions()
@@ -286,6 +294,7 @@ class MainWindow(QMainWindow):
         menu.addAction(self.action_open_model_dir)
         menu.addSeparator()
         menu.addAction(self.action_about)
+        effects.add_popup_shadow(menu)
         self.toolbar_more.setMenu(menu)
 
     def _connect(self) -> None:
@@ -396,6 +405,7 @@ class MainWindow(QMainWindow):
             item.setData(0, SRC_ROLE, str(task.src))
             item.setSizeHint(0, QSize(0, ROW_HEIGHT))
             item.setTextAlignment(2, Qt.AlignRight | Qt.AlignVCenter)
+            item.setFont(2, style.mono_font(12))  # 耗时用等宽字体，数字列才齐
             item.setForeground(1, _status_brush(task.status))
             item.setToolTip(0, f"源文件：{task.src}\n保存到：{task.dst}\n（双击查看对比）")
             if task.error:

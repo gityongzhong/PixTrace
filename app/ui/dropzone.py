@@ -76,7 +76,15 @@ class DropArea(QFrame):
         glyph = QLabel()
         glyph.setPixmap(_glyph())
         glyph.setAlignment(Qt.AlignCenter)
-        column.addWidget(glyph)
+
+        # 图标放进一块渐变圆角小卡里：裸放在空底上会显得单薄
+        glyph_box = QFrame()
+        glyph_box.setProperty("role", "glyphbox")
+        glyph_box.setFixedSize(96, 96)
+        box = QVBoxLayout(glyph_box)
+        box.setContentsMargins(0, 0, 0, 0)
+        box.addWidget(glyph)
+        column.addWidget(glyph_box, 0, Qt.AlignHCenter)
 
         column.addSpacing(16)
         self.title_label = QLabel(DEFAULT_TITLE)

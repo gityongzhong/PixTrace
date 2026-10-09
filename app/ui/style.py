@@ -1,19 +1,22 @@
-"""界面主题（冷调暗色）。
+"""界面主题（流晷暗色）。
 
-设计要点（相对 v0.2 的 VS Code 灰）：
-- 色板从「中性灰」换成微冷灰（色相 ~222）：底 #1a1c20 / 面板 #262930 / 输入 #2b2e35。
-  面板与底色亮度差从 3% 拉到 8%，卡片才浮得起来——这是「有质感」的第一来源。
-- 每个可交互表面顶部压一条 1px 高光（border-top-color 提亮），模拟实体边缘受光；
-  这是 QSS 唯一的「高光」手段（QSS 不支持 box-shadow / inset 阴影）。
-- 统一形态：卡片圆角 8、按钮与输入 6、进度条与滚动条全圆角；按钮长到 30px 高。
-- 列表行高 30px，去掉那个几乎看不见的交替行（只剩脏），改用悬停高亮 + 左侧强调条。
-- 强调色 #3d7df0，主按钮带渐变与上下边缘高光。
+v0.5.0 对齐用户上一款产品「流晷计时器」的设计语言，核心结论来自那次对比：
+对比度高不等于突兀——流晷的对比度比上一版 PixTrace 高得多，但很干净。区别在：
+
+- **底色够深**（#0f1013 近黑）：面板（#17181c）靠明度差自然浮起，
+  不需要「1px 边框 + 顶部高光 + 投影」三件套来证明层次。
+  之前几版的「突兀感」正是这些细碎装饰叠出来的；本版把边框和高光基本拿掉。
+- **强调色纯而收敛**（#1f7fff 亮蓝）：只出现在焦点处——选中行、主按钮、
+  单选点、链接。面积小而纯，所以亮也不吵。上一版把蓝压灰（#4171cd）
+  治标不治本，界面反而发闷。
+- **选中 = 实心亮蓝块 + 白字**（流晷式），不再用暗蓝底灰字。
+- 形态放宽：圆角 8/10，按钮 min-height 22。
 
 仍然把 QSS 写成 Python 常量而不是 .qss 文件：打包时不必处理资源路径
 （PyInstaller 对数据文件的路径处理是个常见的坑）。
 
 投影不在这里：QSS 画不出 box-shadow，由 app/ui/effects.py 用
-QGraphicsDropShadowEffect 补，见该模块。
+QGraphicsDropShadowEffect 补。动画/自绘过渡见 app/ui/anim.py。
 """
 
 from __future__ import annotations
@@ -25,57 +28,57 @@ UI_FONT = (
 MONO_FONT = '"Cascadia Mono", "Consolas", monospace'
 
 # ---------------------------------------------------------------- 色板
-# v0.3.9 收敛过一轮对比度：上一版的边框/高光/强调色都比底色亮太多，几块卡片
-# 像"贴"在底上。这里把色阶差整体压小一档——层次还在，但不抢眼。
-BG = "#1d1f23"          # 窗体底
-BG_PANEL = "#24272d"    # 面板 / 卡片
-BG_CARD = "#24272d"
-BG_WELL = "#1b1d21"     # 凹槽：列表 / 表头（比窗体底稍深，不再挖得很深）
-BG_DROP = "#22252b"     # 空状态拖拽区：比面板只亮一档
-BG_DROP_ACTIVE = "#202c3f"
-BG_INPUT = "#2a2d33"
-BG_FILL = "#2a2d33"     # 次级填充：进度槽、悬停底
-BG_HOVER = "#2f333a"
-BG_PRESSED = "#353941"
-BTN_HOVER = "#2f333a"
-BG_SELECTED = "#283d5e"  # 列表选中（降饱和，别在深底上烧起来）
-BORDER = "#2e3238"
-BORDER_STRONG = "#383c43"
-BORDER_HOVER = "#454a53"
-HILIGHT = "#343841"     # 卡片顶部 1px 高光：只比边框亮一点
-HILIGHT_STRONG = "#41464f"  # 按钮/输入顶部 1px 高光
-BG_DISABLED = "#22252a"  # 禁用控件：几乎融进面板
-BORDER_DISABLED = "#2b2e34"
-BG_GLYPH_TOP = "#272b35"  # 空状态图标小卡
-BG_GLYPH_BOTTOM = "#212530"
-BORDER_GLYPH = "#333846"
-HILIGHT_GLYPH = "#3f4553"
-TEXT = "#cfd1d6"
-TEXT_DIM = "#949aa5"
-TEXT_FAINT = "#6b7280"
+# 常量名是既有接口（anim.py 自绘、main_window、preview、model_dialog 都引用），
+# 只换值不改名。
+BG = "#0f1013"          # 窗体底：近黑（流晷同款深度）
+BG_PANEL = "#17181c"    # 面板 / 卡片：靠明度差浮起，无边框
+BG_CARD = "#17181c"
+BG_WELL = "#121317"     # 凹槽：列表 / 表头
+BG_DROP = "#15161b"     # 空状态拖拽区：比面板亮一丝
+BG_DROP_ACTIVE = "#14294f"  # 拖拽悬停：带蓝的深底
+BG_INPUT = "#1e2025"
+BG_FILL = "#1e2025"     # 次级填充：进度槽、悬停底
+BG_HOVER = "#25272e"
+BG_PRESSED = "#191b1f"  # 按压变暗（比变亮更符合「按下去」的直觉）
+BTN_HOVER = "#25272e"
+BG_SELECTED = "#1f7fff"  # 列表选中：实心亮蓝块（流晷式）
+BORDER = "#1d1f24"      # 极淡：深底下只留一条「若隐若现」的线
+BORDER_STRONG = "#26282e"
+BORDER_HOVER = "#34373f"
+HILIGHT = "#1d1f24"     # 顶部高光已弱化到与边框同色：不再作为分层手段
+HILIGHT_STRONG = "#2b2e35"
+BG_DISABLED = "#15161a"
+BORDER_DISABLED = "#202227"
+BG_GLYPH_TOP = "#1b1e26"   # 空状态图标小卡
+BG_GLYPH_BOTTOM = "#13151b"
+BORDER_GLYPH = "#242835"
+HILIGHT_GLYPH = "#2c3242"
+TEXT = "#e8eaee"
+TEXT_DIM = "#9aa0ab"
+TEXT_FAINT = "#656b74"
 TEXT_ON_ACCENT = "#ffffff"
-ACCENT = "#4171cd"      # 比上一版的 #3d7df0 降了一档饱和与亮度
-ACCENT_HOVER = "#5785da"
-ACCENT_PRESSED = "#355fb3"
-ACCENT_SOFT = "#283d5e"
-ACCENT_HILIGHT = "#729adf"
-OK = "#4ec9b0"
+ACCENT = "#1f7fff"      # 流晷同款亮蓝，只用在焦点处
+ACCENT_HOVER = "#3d90ff"
+ACCENT_PRESSED = "#1668d6"
+ACCENT_SOFT = "#142a52"  # 下拉列表等次级选中底
+ACCENT_HILIGHT = "#69a7ff"
+OK = "#3fd0a4"
 WARN = "#d9b36c"
 ERR = "#f28b82"
-OK_TEXT = "#5ecfb8"
-WARN_TEXT = "#e0c088"
-ERR_TEXT = "#f28b82"
-PREVIEW_BG = "#151619"
-CHECKER_LIGHT = "#3a3d44"   # 预览窗透明区棋盘格
-CHECKER_DARK = "#2c2f35"
+OK_TEXT = "#43d9a8"
+WARN_TEXT = "#e3c084"
+ERR_TEXT = "#ff8078"
+PREVIEW_BG = "#0b0c0e"
+CHECKER_LIGHT = "#292c33"   # 预览窗透明区棋盘格
+CHECKER_DARK = "#1e2025"
 
-# 主窗口中央区：极淡的纵向渐变（比上一版跨度更小，几乎察觉不到但不再是死平的底色）
-SURFACE_TOP = "#212429"
-SURFACE_BOTTOM = "#1a1c20"
+# 主窗口中央区：极淡的纵向渐变（底已近黑，跨度刻意很小）
+SURFACE_TOP = "#131419"
+SURFACE_BOTTOM = "#0c0d10"
 
-FOCUS_RING = "rgba(65, 113, 205, 0.45)"
-TRACK = "rgba(255, 255, 255, 0.06)"
-ROW_HOVER = "rgba(255, 255, 255, 0.04)"
+FOCUS_RING = "rgba(31, 127, 255, 0.5)"
+TRACK = "rgba(255, 255, 255, 0.07)"
+ROW_HOVER = "rgba(255, 255, 255, 0.05)"
 
 STATUS_COLORS = {
     "等待": TEXT_FAINT,
@@ -139,12 +142,11 @@ QLabel[role="droptitle"] {{
     color: {TEXT};
 }}
 
-/* ---------- 容器：底色 + 1px 边框 + 顶部高光 ---------- */
+/* ---------- 容器：无边框，靠明度差浮起（流晷式） ---------- */
 QFrame[role="panel"] {{
     background-color: {BG_PANEL};
-    border: 1px solid {BORDER};
-    border-top-color: {HILIGHT};
-    border-radius: 8px;
+    border: none;
+    border-radius: 10px;
 }}
 QFrame[role="separator"] {{
     background-color: {BORDER};
@@ -167,29 +169,24 @@ QFrame[role="glyphbox"] {{
     border-radius: 18px;
 }}
 
-/* ---------- 按钮 ---------- */
+/* ---------- 按钮：无边框纯明度差 ---------- */
 QPushButton {{
     background-color: {BG_INPUT};
     color: {TEXT};
-    border: 1px solid {BORDER_STRONG};
-    border-top-color: {HILIGHT_STRONG};
-    border-radius: 6px;
-    padding: 6px 16px;
-    min-height: 20px;
+    border: none;
+    border-radius: 8px;
+    padding: 6px 18px;
+    min-height: 22px;
 }}
 QPushButton:hover {{
     background-color: {BTN_HOVER};
-    border-color: {BORDER_HOVER};
 }}
 QPushButton:pressed {{
     background-color: {BG_PRESSED};
-    border-color: {BORDER_HOVER};
 }}
 QPushButton:disabled {{
     color: {TEXT_FAINT};
     background-color: {BG_DISABLED};
-    border-color: {BORDER_DISABLED};
-    border-top-color: {BORDER_DISABLED};
 }}
 /* 不给 QPushButton 全局 focus 描边：开局焦点落在「添加图片」上会常亮一整块蓝，
    像被误选中；focus 反馈交给输入类控件 */
@@ -223,55 +220,47 @@ QPushButton[role="flat"]:disabled {{
     background: transparent;
 }}
 
-/* 主按钮：上下边缘各一条高光/暗边，做出实体感 */
+/* 主按钮：纯亮蓝块，无边框无高光（流晷的「开始」按钮同款） */
 QPushButton[role="primary"] {{
     background-color: {ACCENT};
     color: {TEXT_ON_ACCENT};
-    border: 1px solid {ACCENT_HOVER};
-    border-top-color: {ACCENT_HILIGHT};
-    border-bottom-color: {ACCENT_PRESSED};
+    border: none;
     font-weight: 500;
-    padding: 6px 22px;
+    padding: 6px 24px;
 }}
 QPushButton[role="primary"]:hover {{
     background-color: {ACCENT_HOVER};
-    border-color: {ACCENT_HILIGHT};
-    border-bottom-color: {ACCENT};
 }}
 QPushButton[role="primary"]:pressed {{
     background-color: {ACCENT_PRESSED};
-    border-color: {ACCENT_PRESSED};
 }}
 QPushButton[role="primary"]:disabled {{
     background-color: {BG_DISABLED};
-    border-color: {BORDER_DISABLED};
-    border-top-color: {HILIGHT};
     color: {TEXT_FAINT};
 }}
 
-/* 色块按钮（背景颜色） */
+/* 色块按钮（背景颜色）：色块需要一圈淡边，浅色色块才看得清边界 */
 QPushButton[role="swatch"] {{
     border: 1px solid {BORDER_STRONG};
-    border-top-color: {HILIGHT_STRONG};
-    border-radius: 6px;
+    border-radius: 8px;
     padding: 3px 10px;
     font-size: 12px;
     min-height: 18px;
 }}
 
-/* ---------- 输入控件 ---------- */
+/* ---------- 输入控件：平时无边框，focus 才亮蓝描边 ---------- */
 QComboBox, QSpinBox, QDoubleSpinBox, QLineEdit, QPlainTextEdit {{
     background-color: {BG_INPUT};
     color: {TEXT};
-    border: 1px solid {BORDER_STRONG};
-    border-radius: 6px;
+    border: 1px solid transparent;
+    border-radius: 8px;
     padding: 4px 10px;
-    min-height: 20px;
+    min-height: 22px;
     selection-background-color: {ACCENT};
     selection-color: {TEXT_ON_ACCENT};
 }}
 QComboBox:hover, QLineEdit:hover {{
-    border-color: {BORDER_HOVER};
+    background-color: {BG_HOVER};
 }}
 QComboBox:focus, QLineEdit:focus {{
     border-color: {ACCENT};
@@ -283,9 +272,10 @@ QComboBox::drop-down {{
 QComboBox QAbstractItemView {{
     background-color: {BG_INPUT};
     border: 1px solid {BORDER_STRONG};
-    border-radius: 6px;
+    border-radius: 8px;
     color: {TEXT};
-    selection-background-color: {ACCENT_SOFT};
+    selection-background-color: {ACCENT};
+    selection-color: {TEXT_ON_ACCENT};
     outline: none;
 }}
 
@@ -311,10 +301,10 @@ QRadioButton:disabled {{
     color: {TEXT_FAINT};
 }}
 
-/* ---------- 列表：深色凹槽 + 悬停高亮 + 左侧强调条 ---------- */
+/* ---------- 列表：深色凹槽 + 悬停高亮 + 实心亮蓝选中块 ---------- */
 QTreeWidget, QListWidget {{
     background-color: {BG_WELL};
-    border: 1px solid {BORDER};
+    border: none;
     border-radius: 8px;
     outline: none;
     show-decoration-selected: 1;
@@ -328,11 +318,12 @@ QTreeWidget::item, QListWidget::item {{
     border: none;
 }}
 QTreeWidget::item:selected, QListWidget::item:selected {{
-    background-color: {ACCENT_SOFT};
-    color: {TEXT};
+    background-color: {BG_SELECTED};
+    color: {TEXT_ON_ACCENT};
 }}
 /* 注意：这里不能加 border-left 强调条——::item 按列生效，会让选中行的
-   每一列之间都竖起一条蓝线。真要强调条得写 delegate，收益不值。 */
+   每一列之间都竖起一条蓝线。真要强调条得写 delegate，收益不值。
+   选中行的状态列文字仍由代码里 setForeground 按状态着色，在亮蓝底上均可读。 */
 QTreeWidget::item:hover, QListWidget::item:hover {{
     background-color: {ROW_HOVER};
 }}
@@ -397,17 +388,18 @@ QScrollBar::add-page, QScrollBar::sub-page {{
 /* ---------- 弹出菜单与提示 ---------- */
 QMenu {{
     background-color: {BG_INPUT};
-    border: 1px solid {BORDER_STRONG};
-    border-radius: 8px;
+    border: none;
+    border-radius: 10px;
     padding: 6px;
 }}
 QMenu::item {{
     padding: 7px 28px 7px 14px;
-    border-radius: 5px;
+    border-radius: 6px;
     color: {TEXT};
 }}
 QMenu::item:selected {{
-    background-color: {ACCENT_SOFT};
+    background-color: {ACCENT};
+    color: {TEXT_ON_ACCENT};
 }}
 QMenu::item:disabled {{
     color: {TEXT_FAINT};
@@ -421,7 +413,7 @@ QToolTip {{
     background-color: {BG_INPUT};
     color: {TEXT};
     border: 1px solid {BORDER_STRONG};
-    border-radius: 6px;
+    border-radius: 8px;
     padding: 6px 10px;
 }}
 

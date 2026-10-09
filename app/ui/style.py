@@ -194,7 +194,9 @@ QPushButton:disabled {{
 /* 不给 QPushButton 全局 focus 描边：开局焦点落在「添加图片」上会常亮一整块蓝，
    像被误选中；focus 反馈交给输入类控件 */
 
-/* 工具条右侧带下拉菜单的按钮：给箭头留出位置 */
+/* 带下拉菜单的按钮：给箭头留出位置。
+   目前没有控件在用（v0.4.1 移除了工具条右侧的「设置」菜单），样式先留着，
+   以后要在别处挂菜单按钮直接加 role="menubtn" 即可。 */
 QPushButton[role="menubtn"] {{
     padding-right: 26px;
 }}

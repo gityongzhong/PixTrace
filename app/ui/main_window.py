@@ -6,7 +6,8 @@
 就会重新处理（规划阶段会跳过已成功生成的输出）。
 
 布局自上而下：工具条 → [大拖拽区 ⇄ 任务列表] → 设置面板 → 动作行（状态/进度/取消/开始处理）
-→ 底部链接条。没有菜单栏：文件类操作在工具条左侧，模型管理 / 关于等在工具条右侧「设置」菜单里。
+→ 底部链接条。没有菜单栏、也没有工具条右侧的「设置」菜单：界面入口只有工具条的
+添加图片 / 添加文件夹 / 清空列表三个按钮（模型管理走 Ctrl+M，或「开始处理」时的兜底提示）。
 列表为空时 44px 提示条隐藏，整块内容区由 DropArea 接管。
 """
 
@@ -30,7 +31,6 @@ from PySide6.QtWidgets import (
     QHeaderView,
     QLabel,
     QMainWindow,
-    QMenu,
     QMessageBox,
     QProgressBar,
     QPushButton,
@@ -293,18 +293,18 @@ class MainWindow(QMainWindow):
         for button in (self.toolbar_add_files, self.toolbar_add_folder, self.toolbar_clear):
             row.addWidget(button)
         row.addStretch(1)
-
-        self.toolbar_more = QPushButton("设置")
-        self.toolbar_more.setProperty("role", "menubtn")
-        self.toolbar_more.setToolTip("模型管理与关于")
-        row.addWidget(self.toolbar_more)
         return bar
 
     def _build_actions(self) -> None:
-        """动作对象挂在窗口上（不进菜单栏），菜单栏已去掉。
+        """动作对象挂在窗口上：既没有菜单栏，也没有「设置」菜单。
 
-        菜单只保留「设置」这一个入口，快捷键照旧可用：QAction 直接挂在
-        主窗口上，Qt 会为其注册窗口级快捷键。
+        界面入口收敛成工具条上三个按钮（添加图片 / 添加文件夹 / 清空列表）。
+        QAction 直接挂在主窗口上，Qt 会为其注册窗口级快捷键，所以 Ctrl+O /
+        Ctrl+Shift+O / Ctrl+Q 照旧有效。
+
+        模型管理与「关于」的 UI 入口已移除（v0.4.1），但动作对象本身留着：
+        Ctrl+M 仍能唤出模型管理；「开始处理」时发现模型未就绪也会兜底引导过去
+        （见 start()）；show_about() 保留，待以后重新挂到别处。
         """
         self.action_add_files = QAction("添加图片…", self)
         self.action_add_files.setShortcut(QKeySequence("Ctrl+O"))
@@ -329,14 +329,6 @@ class MainWindow(QMainWindow):
             self.action_about,
         ):
             self.addAction(action)
-
-        menu = QMenu(self)
-        menu.addAction(self.action_manage_models)
-        menu.addAction(self.action_open_model_dir)
-        menu.addSeparator()
-        menu.addAction(self.action_about)
-        effects.add_popup_shadow(menu)
-        self.toolbar_more.setMenu(menu)
 
     def _connect(self) -> None:
         self.toolbar_add_files.clicked.connect(self.pick_files)

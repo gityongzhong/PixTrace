@@ -43,13 +43,18 @@
   （选中行/主按钮/单选点/链接）、列表选中=实心亮蓝块白字、按钮/列表/菜单全去边框、
   输入框 border transparent 占位+focus 亮蓝描边、圆角 8/10。
   **凡涉及界面审美，以流晷计时器为准：近黑底、无边框、亮蓝焦点、装饰克制。**
-- **v0.4.0 三处动画**：新增 app/ui/anim.py（TintAnimation/ValueRoller/mix/paint_tint_frame/fade_in）。
+- **v0.4.0 三处动画**：新增 app/ui/anim.py（TintAnimation/ValueRoller/mix/paint_tint_frame）。
   QSS 不支持 CSS 动画（transition/keyframes 都没有），过渡只能用 Qt 动画框架算中间值。
-  三规矩写死：不逐帧改 QSS（每帧全量重算掉帧）、一控件一 effect（阴影与透明度互斥）、
+  三规矩写死：不逐帧改 QSS（每帧全量重算掉帧）、**graphics effect 禁止嵌套（含父子）**、
   动画 150-220ms 且只在状态变化瞬间播。进度条 ValueRoller（完成必须 snap 停表）、
-  状态文字 fade_in 起始 0.45 不给 0、拖拽框 TintAnimation+paintEvent 自绘
+  拖拽框 TintAnimation+paintEvent 自绘
   （**自绘控件不要调 super().paintEvent()**，否则 QSS 背景叠加）。
   QRect.adjusted 只吃 int，内缩半像素必须 QRectF。shot_gui settle() 等动画跑完再截。
+- **v0.5.1 重叠修复（v0.4.0 的坑爆了）**：状态 QLabel 挂透明度 effect + 所在面板挂投影
+  = 嵌套 effect，真实上屏文字叠影（fade_in 已删）。**widget.grab() 截图照不出
+  嵌套 effect 叠影**——grab 与上屏合成路径不同，涉及 effect 的改动不能只靠截图验收。
+  状态文字现在：完整文案存 _status_full + 按宽度 elide（resizeEvent 重算）+ tooltip 全文；
+  动作行布局 = 状态(弹性宽) + 进度条贴 取消/开始处理。
 - **v0.4.1 移除工具条「设置」菜单**：界面入口只剩 添加图片/添加文件夹/清空列表。
   模型管理 = Ctrl+M 或 start() 兜底弹窗；show_about()/open_model_dir() 无 UI 触发待挂载。
 - **v0.3.7 质感改造（已被 v0.5.0 取代，但 effects.py 沿用）**：app/ui/effects.py

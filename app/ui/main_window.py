@@ -247,11 +247,9 @@ class MainWindow(QMainWindow):
 
         self.status_label = QLabel("就绪")
         self.status_label.setProperty("role", "hint")
-        self.status_label.setMinimumWidth(150)
-        self.status_label.setMaximumWidth(340)
-        # 文字每次换内容时淡入一下，替代原来的「啪」一下换字。
-        # 起始透明度不给 0，进度更新时每秒会重播好几次，全透明会变成闪烁。
-        self._status_fade = anim.fade_in(self.status_label, start=0.45)
+        # 完整文案存在 _status_full（tooltip 也用它）；界面上只显示
+        # 按当前宽度省略后的版本，长文案不会被硬截成半截字
+        self._status_full = "就绪"
 
         self.progress = QProgressBar()
         self.progress.setRange(0, 100)
@@ -267,9 +265,10 @@ class MainWindow(QMainWindow):
         self.start_button.setProperty("role", "primary")
         self.start_button.setMinimumWidth(104)
 
-        action_row.addWidget(self.status_label)
+        # 状态文字吃掉中间全部弹性宽度（超长自动省略），进度条贴着动作按钮，
+        # 「看着跑完 → 立刻再跑一轮」的视线动线是连续的
+        action_row.addWidget(self.status_label, 1)
         action_row.addWidget(self.progress, 0, Qt.AlignVCenter)
-        action_row.addStretch(1)
         action_row.addWidget(self.cancel_button)
         action_row.addWidget(self.start_button)
         wrap.addWidget(self.action_row)
@@ -646,7 +645,7 @@ class MainWindow(QMainWindow):
         spec = resolve_model(DEFAULT_MODEL_KEY)
         if model_store.find_model(spec.filename) is None:
             self._set_status("抠图模型未就绪 — 按 Ctrl+M 打开模型管理")
-        elif self.status_label.text().startswith("抠图模型未就绪"):
+        elif self._status_full.startswith("抠图模型未就绪"):
             self._set_status("就绪")
 
     def open_model_dir(self) -> None:
@@ -699,19 +698,29 @@ class MainWindow(QMainWindow):
         dialog.exec()
 
     def _set_status(self, text: str) -> None:
-        """更新状态文字，并让它淡入一次。
+        """更新状态文字（完整文案记在 _status_full，界面按宽度省略显示）。
 
-        文字没变就不重播动画：进度回调会反复给出同样的文字，否则同一句会被
-        反复点亮，看着像闪。起始值固定 0.45 而不是当前值——文字更新很密时
-        （每张图一次），从当前值续着淡会越来越看不出，反而不稳定。
+        注意不要给这个 QLabel 挂任何 QGraphicsEffect：它所在的动作行面板挂着
+        卡片投影，父子嵌套 effect 是 Qt 不支持的组合，真实上屏时文字会被
+        偏移重画，看起来就是「就绪」和时间信息叠在一起（v0.5.0 踩过的坑）。
         """
-        if text == self.status_label.text():
+        if text == self._status_full:
             return
-        self.status_label.setText(text)
+        self._status_full = text
         self.status_label.setToolTip(text)
-        if self.isVisible():
-            self._status_fade.stop()
-            self._status_fade.start()
+        self._apply_status_elide()
+
+    def _apply_status_elide(self) -> None:
+        """按标签当前宽度把完整文案截成带省略号的版本。"""
+        width = self.status_label.width()
+        if width <= 16:  # 尚未完成布局，先放全文，resizeEvent 会再截
+            self.status_label.setText(self._status_full)
+            return
+        elided = self.status_label.fontMetrics().elidedText(
+            self._status_full, Qt.ElideRight, width
+        )
+        if elided != self.status_label.text():
+            self.status_label.setText(elided)
 
     @staticmethod
     def _format_duration(seconds: float) -> str:
@@ -783,6 +792,11 @@ class MainWindow(QMainWindow):
         self._store.setValue(
             "panel/state_json", json.dumps(self.settings_panel.state(), ensure_ascii=False)
         )
+
+    def resizeEvent(self, event) -> None:  # noqa: N802
+        super().resizeEvent(event)
+        # 窗口宽了/窄了，状态文字的省略位置都要跟着重算
+        self._apply_status_elide()
 
     def closeEvent(self, event) -> None:  # noqa: N802
         if self.controller.is_running():

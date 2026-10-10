@@ -34,15 +34,29 @@
 - 交付目录是 **`E:\桌面文件`**（用户真实桌面，不再放 C:\Users\Administrator\Desktop）。
 - 打包/交付时 `present_files` 第一个给便携版 zip。
 
-### 当前进度（2026-10-09 更新）
+### 当前进度（2026-10-10 更新）
 
-- **v0.3.7 界面质感改造（A+B 档，用户确认后实施）**：冷灰新色板（面板/底亮度差 3%→8%）、
-  面板与按钮顶部 1px 高光、统一圆角（8/6）、按钮 30px 高、主按钮边缘高光、渐变进度条、
-  拖拽区虚线→实线、列表行高 30 + 凹槽底 + 悬停高亮（去交替行）、耗时列等宽字体、
-  空状态图标渐变圆角小卡；新增 app/ui/effects.py（QGraphicsDropShadowEffect：
-  卡片级 radius10 会被父级裁剪、弹出层 radius22 用于 QMenu）。QSS 坑：
-  QPushButton 全局 focus 蓝框会常亮（删）；::item:selected 加 border-left 会让列间竖线（删）。
-- **项目已 git init**（基线 21a65b1 = v0.3.6；v0.3.7 = 9340360）。.gitignore 排除
+- **v0.5.0 主题对齐流晷计时器（当前基准，用户审美锚点）**：用户发来上一款产品
+  「流晷计时器」截图并确认全面对齐。**重新解读 v0.3.9 的「太突兀」**：病灶不是对比度高，
+  而是底色不够深导致靠「边框+高光+阴影」三件套撑层次；把蓝压灰治标不治本。
+  现行风格：窗底 #0f1013 近黑、面板 #17181c 无边框纯明度差、强调色 #1f7fff 只用在焦点
+  （选中行/主按钮/单选点/链接）、列表选中=实心亮蓝块白字、按钮/列表/菜单全去边框、
+  输入框 border transparent 占位+focus 亮蓝描边、圆角 8/10。
+  **凡涉及界面审美，以流晷计时器为准：近黑底、无边框、亮蓝焦点、装饰克制。**
+- **v0.4.0 三处动画**：新增 app/ui/anim.py（TintAnimation/ValueRoller/mix/paint_tint_frame/fade_in）。
+  QSS 不支持 CSS 动画（transition/keyframes 都没有），过渡只能用 Qt 动画框架算中间值。
+  三规矩写死：不逐帧改 QSS（每帧全量重算掉帧）、一控件一 effect（阴影与透明度互斥）、
+  动画 150-220ms 且只在状态变化瞬间播。进度条 ValueRoller（完成必须 snap 停表）、
+  状态文字 fade_in 起始 0.45 不给 0、拖拽框 TintAnimation+paintEvent 自绘
+  （**自绘控件不要调 super().paintEvent()**，否则 QSS 背景叠加）。
+  QRect.adjusted 只吃 int，内缩半像素必须 QRectF。shot_gui settle() 等动画跑完再截。
+- **v0.4.1 移除工具条「设置」菜单**：界面入口只剩 添加图片/添加文件夹/清空列表。
+  模型管理 = Ctrl+M 或 start() 兜底弹窗；show_about()/open_model_dir() 无 UI 触发待挂载。
+- **v0.3.7 质感改造（已被 v0.5.0 取代，但 effects.py 沿用）**：app/ui/effects.py
+  QGraphicsDropShadowEffect 卡片级 radius10（会被父级裁剪）、弹出层 radius22（QMenu）。
+  QSS 坑仍在注释里：QPushButton 全局 focus 蓝框会常亮（删）；
+  ::item:selected 加 border-left 会让列间竖线（删）。
+- **项目已 git init**（基线 21a65b1 = v0.3.6；v0.5.0 = 8eaabdc）。.gitignore 排除
   models/*.onnx、dist/、build/pixtrace/、.shots/、demo/。**此后大改 UI 先提交再改。**
 - **v0.3.6 默认窗口 860×560**（=最小尺寸）。主窗口其实一直有几何记忆（window/geometry）；
   默认尺寸一改，记忆键必须翻代（geometry → geometry2，_restore_state 删旧键），

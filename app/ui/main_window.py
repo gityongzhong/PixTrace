@@ -677,7 +677,7 @@ class MainWindow(QMainWindow):
         )
 
     def show_support(self) -> None:
-        """赞赏码弹窗：有 assets/support.png 就显示图片，否则显示占位提示。"""
+        """赞赏码弹窗：显示 assets/support.png，没有该文件时显示占位提示。"""
         image = paths.resource_dir() / "assets" / "support.png"
         dialog = QDialog(self)
         dialog.setWindowTitle("赞赏")
@@ -685,9 +685,18 @@ class MainWindow(QMainWindow):
         layout.setContentsMargins(24, 24, 24, 24)
         if image.is_file():
             picture = QLabel()
-            picture.setPixmap(QPixmap(str(image)))
+            # 显示尺寸固定 300px：原图 676px 直接放会撑满屏幕，缩小时用平滑变换
+            picture.setPixmap(
+                QPixmap(str(image)).scaled(
+                    300, 300, Qt.KeepAspectRatio, Qt.SmoothTransformation
+                )
+            )
             picture.setAlignment(Qt.AlignCenter)
             layout.addWidget(picture)
+            caption = QLabel("微信扫码赞赏 · 请作者喝杯咖啡")
+            caption.setProperty("role", "hint")
+            caption.setAlignment(Qt.AlignCenter)
+            layout.addWidget(caption)
         else:
             hint = QLabel(
                 "赞赏码占位\n\n把赞赏码图片保存为程序目录下的\nassets/support.png，"

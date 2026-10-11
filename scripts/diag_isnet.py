@@ -15,7 +15,10 @@ STD = np.array([0.229, 0.224, 0.225], dtype=np.float32)
 
 
 def main() -> int:
-    sample = sys.argv[1] if len(sys.argv) > 1 else "C:/Users/Administrator/Pictures/我.jpg"
+    if len(sys.argv) < 2:
+        print("用法: python scripts/diag_isnet.py <图片路径>")
+        return 2
+    sample = sys.argv[1]
     img = Image.open(sample).convert("RGB").resize((1024, 1024), Image.BILINEAR)
     arr = np.asarray(img, dtype=np.float32)
 

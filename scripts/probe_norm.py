@@ -10,6 +10,7 @@
 
 from __future__ import annotations
 
+import os
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -26,6 +27,20 @@ from app.core.postprocess import normalize_mask  # noqa: E402
 from app.core.preprocess import to_tensor  # noqa: E402
 
 OUT_DIR = ROOT / ".probe"
+
+
+def _sample_images() -> list[tuple[str, Path]]:
+    """实验素材。
+
+    优先取环境变量 PIXTRACE_SAMPLES（分号分隔的图片路径），否则取仓库内
+    samples/ 目录下的全部文件。源码里不写死某台机器上的私有路径。
+    """
+    raw = os.environ.get("PIXTRACE_SAMPLES", "")
+    paths = [Path(p.strip()) for p in raw.split(";") if p.strip()]
+    if not paths:
+        folder = ROOT / "samples"
+        paths = sorted(p for p in folder.glob("*") if p.is_file()) if folder.is_dir() else []
+    return [(p.name, p) for p in paths]
 
 
 @dataclass(frozen=True)
@@ -98,10 +113,10 @@ def main() -> int:
         ("isnet", ROOT / "models" / "isnet-general-use.onnx", "isnet-general-use"),
     ]
 
-    samples = [
-        ("人像", Path("C:/Users/Administrator/Pictures/我.jpg")),
-        ("壁纸", Path("C:/Windows/Web/Wallpaper/ThemeA/img20.jpg")),
-    ]
+    samples = _sample_images()
+    if not samples:
+        print("没有实验素材。把图片放进 samples/ 目录，或用 PIXTRACE_SAMPLES 指定（分号分隔）。")
+        return 1
 
     combos = [
         ("div_max+stretch", "max", "stretch"),

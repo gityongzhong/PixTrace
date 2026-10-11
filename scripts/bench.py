@@ -8,6 +8,7 @@
 
 from __future__ import annotations
 
+import os
 import statistics
 import sys
 import time
@@ -24,10 +25,18 @@ from app.core.models import MODELS  # noqa: E402
 from app.core.postprocess import normalize_mask, unletterbox  # noqa: E402
 from app.core.preprocess import letterbox, to_tensor  # noqa: E402
 
-SAMPLES = [
-    ("人像 2582x3443", Path("C:/Users/Administrator/Pictures/我.jpg")),
-    ("壁纸 3840x2400", Path("C:/Windows/Web/Wallpaper/ThemeA/img20.jpg")),
-]
+def sample_images() -> list[tuple[str, Path]]:
+    """压测素材。
+
+    优先取环境变量 PIXTRACE_SAMPLES（分号分隔的图片路径），否则取仓库内
+    samples/ 目录下的全部文件。源码里不写死某台机器上的私有路径。
+    """
+    raw = os.environ.get("PIXTRACE_SAMPLES", "")
+    paths = [Path(p.strip()) for p in raw.split(";") if p.strip()]
+    if not paths:
+        folder = ROOT / "samples"
+        paths = sorted(p for p in folder.glob("*") if p.is_file()) if folder.is_dir() else []
+    return [(p.name, p) for p in paths]
 
 REPEATS = 7
 
@@ -66,13 +75,18 @@ def bench_inference(session: ort.InferenceSession, spec, img: Image.Image) -> fl
 
 
 def main() -> int:
-    print(f"CPU: {__import__('os').cpu_count()} 核，每项重复 {REPEATS} 次取中位数\n")
+    samples = sample_images()
+    if not samples:
+        print("没有压测素材。把图片放进 samples/ 目录，或用 PIXTRACE_SAMPLES 指定（分号分隔）。")
+        return 1
+
+    print(f"CPU: {os.cpu_count()} 核，每项重复 {REPEATS} 次取中位数\n")
 
     for spec in MODELS.values():
         print(f"=== {spec.display}档 {spec.filename} ===")
         for label, intra_op in (("single(默认线程)", None), ("worker(intra=1)", 1)):
             session = bench_session(ROOT / "models" / spec.filename, spec, intra_op)
-            for sample_name, sample_path in SAMPLES:
+            for sample_name, sample_path in samples:
                 with Image.open(sample_path) as raw:
                     img = raw.convert("RGB")
                 median_ms, coverage = bench_inference(session, spec, img)

@@ -126,19 +126,22 @@ class DropBar(QFrame):
 
 
 class FooterBar(QFrame):
-    """窗口最底部的链接条：GitHub 项目主页 + 赞赏入口，居中。"""
+    """窗口右下角的一行辅助链接：GitHub 项目主页 + 赞赏入口。
+
+    刻意不做成通栏面板：不加底色、不加投影、内容一律贴右。整条通栏会把
+    视线从动作行拽走，右下角一行小链接既不抢焦点，也不多占一整行的高度。
+    """
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
-        self.setProperty("role", "panel")
         row = QHBoxLayout(self)
-        row.setContentsMargins(12, 7, 12, 7)
-        row.setSpacing(14)
+        row.setContentsMargins(0, 0, 2, 0)
+        row.setSpacing(12)
 
-        row.addStretch(1)
+        row.addStretch(1)  # 只留左侧弹性，内容贴着右下角
         self.github_label = QLabel(
             f'<a href="{GITHUB_URL}" '
-            f'style="color: {style.ACCENT}; text-decoration: none;">GitHub 项目主页</a>'
+            f'style="color: {style.TEXT_DIM}; text-decoration: none;">GitHub 项目主页</a>'
         )
         self.github_label.setOpenExternalLinks(True)
         self.github_label.setToolTip(GITHUB_URL)
@@ -146,14 +149,13 @@ class FooterBar(QFrame):
 
         line = QFrame()
         line.setProperty("role", "separator")
-        line.setFixedSize(1, 14)
+        line.setFixedSize(1, 12)
         row.addWidget(line)
 
         self.support_button = QPushButton("赞赏")
         self.support_button.setProperty("role", "flat")
         self.support_button.setToolTip("请作者喝杯咖啡")
         row.addWidget(self.support_button)
-        row.addStretch(1)
 
 
 class MainWindow(QMainWindow):
@@ -199,7 +201,7 @@ class MainWindow(QMainWindow):
         central.setAttribute(Qt.WA_StyledBackground, True)
         self.setCentralWidget(central)
         wrap = QVBoxLayout(central)
-        wrap.setContentsMargins(10, 0, 10, 10)
+        wrap.setContentsMargins(10, 0, 10, 7)
         wrap.setSpacing(9)
 
         wrap.addWidget(self._build_toolbar())
@@ -273,8 +275,8 @@ class MainWindow(QMainWindow):
         action_row.addWidget(self.start_button)
         wrap.addWidget(self.action_row)
 
+        # 右下角链接行：无底色无投影，紧贴底部
         self.action_bar = FooterBar()
-        effects.add_card_shadow(self.action_bar)
         wrap.addWidget(self.action_bar)
 
         self._build_actions()

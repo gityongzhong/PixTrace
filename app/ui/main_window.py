@@ -63,7 +63,7 @@ DEFAULT_SIZE = (860, 560)  # 开窗尺寸
 MIN_SIZE = (860, 560)  # 下限，再小设置行会挤到换行
 GEOMETRY_KEY = "window/geometry2"  # 尾号跟默认尺寸策略走，改尺寸就 +1
 LEGACY_GEOMETRY_KEY = "window/geometry"
-GITHUB_URL = "https://github.com/gityongzhong/PixTrace"  # 占位，仓库建好后替换
+GITHUB_URL = "https://github.com/gityongzhong/PixTrace"
 
 
 def _status_brush(status: TaskStatus) -> QBrush:
@@ -126,7 +126,7 @@ class DropBar(QFrame):
 
 
 class FooterBar(QFrame):
-    """窗口右下角的一行辅助链接：GitHub 项目主页 + 赞赏入口。
+    """窗口右下角的一行辅助链接：GitHub 仓库地址 + 赞赏入口。
 
     刻意不做成通栏面板：不加底色、不加投影、内容一律贴右。整条通栏会把
     视线从动作行拽走，右下角一行小链接既不抢焦点，也不多占一整行的高度。
@@ -141,7 +141,8 @@ class FooterBar(QFrame):
         row.addStretch(1)  # 只留左侧弹性，内容贴着右下角
         self.github_label = QLabel(
             f'<a href="{GITHUB_URL}" '
-            f'style="color: {style.TEXT_DIM}; text-decoration: none;">GitHub 项目主页</a>'
+            f'style="color: {style.TEXT_DIM}; text-decoration: none;">'
+            f'github.com/gityongzhong/PixTrace</a>'
         )
         self.github_label.setOpenExternalLinks(True)
         self.github_label.setToolTip(GITHUB_URL)

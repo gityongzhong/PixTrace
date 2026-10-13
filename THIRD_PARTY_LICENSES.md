@@ -44,6 +44,12 @@ https://www.gnu.org/licenses/lgpl-3.0.html ，
 Qt 使用的第三方组件清单见
 https://doc.qt.io/qt-6/qt-attribution.html 。
 
+## 界面资源
+
+| 资源 | 来源 | 许可 |
+|---|---|---|
+| assets/github.png（右下角仓库链接图标） | GitHub Octicons「mark-github」16×16 路径（https://github.com/primer/octicons），经 `scripts/make_git_icon.py` 渲染生成 | MIT |
+
 ## 构建工具（不随程序分发，仅构建期使用）
 
 | 包 | 许可 | 说明 |

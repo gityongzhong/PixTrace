@@ -24,6 +24,7 @@ datas = [
     (str(ROOT / "assets" / "pixtrace.png"), "assets"),
     (str(ROOT / "assets" / "logo-mark.png"), "assets"),
     (str(ROOT / "assets" / "support.png"), "assets"),
+    (str(ROOT / "assets" / "github.png"), "assets"),
     (str(ROOT / "LICENSE"), "."),
     (str(ROOT / "THIRD_PARTY_LICENSES.md"), "."),
     (str(ROOT / "README.md"), "."),

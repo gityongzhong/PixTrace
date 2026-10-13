@@ -19,8 +19,18 @@ import sys
 import time
 from pathlib import Path
 
-from PySide6.QtCore import QSettings, QSize, Qt, QTimer
-from PySide6.QtGui import QAction, QBrush, QColor, QIcon, QKeySequence, QShortcut, QPixmap
+from PySide6.QtCore import QSettings, QSize, Qt, QTimer, QUrl
+from PySide6.QtGui import (
+    QAction,
+    QBrush,
+    QColor,
+    QDesktopServices,
+    QIcon,
+    QKeySequence,
+    QShortcut,
+    QPixmap,
+    QPainter,
+)
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QApplication,
@@ -125,28 +135,79 @@ class DropBar(QFrame):
         self.label.setText(text)
 
 
+class GitHubIconButton(QPushButton):
+    """右下角的 GitHub 图标按钮：官方 mark 剪影，随主题着色，点击打开仓库。
+
+    图标是 scripts/make_git_icon.py 生成的白色剪影 PNG（assets/github.png），
+    绘制时用 SourceIn 染成目标色——常态灰、悬停提亮、按下取强调色，一张资源
+    全覆盖；也因此不用为一个小图标把 QtSvg 请回运行时（spec 已剔除）。
+
+    20px 的图标配 26px 的控件：多出来的一圈是点击热区，小图标不好点中。
+    """
+
+    ICON = 18
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self._mark = QPixmap(str(paths.resource_dir() / "assets" / "github.png"))
+        self.setFixedSize(26, 26)
+        self.setCursor(Qt.PointingHandCursor)
+        self.setFocusPolicy(Qt.NoFocus)
+        self.setToolTip(f"GitHub 项目主页 · {GITHUB_URL}")
+        self._tint = anim.TintAnimation(self)
+        self._tint.changed.connect(lambda _value: self.update())
+
+    def enterEvent(self, event) -> None:
+        self._tint.to(1.0)
+        super().enterEvent(event)
+
+    def leaveEvent(self, event) -> None:
+        self._tint.to(0.0)
+        super().leaveEvent(event)
+
+    def paintEvent(self, event) -> None:
+        # 不调 super().paintEvent()：QSS 的按钮底色会叠在自绘内容上（anim.py 规矩 1）
+        if self._mark.isNull():
+            return
+        if self.isDown():
+            color = QColor(style.ACCENT_HILIGHT)
+        else:
+            color = anim.mix(style.TEXT_FAINT, style.TEXT_DIM, self._tint.value)
+
+        tinted = QPixmap(self._mark.size())
+        tinted.fill(Qt.transparent)
+        painter = QPainter(tinted)
+        painter.drawPixmap(0, 0, self._mark)
+        painter.setCompositionMode(QPainter.CompositionMode_SourceIn)
+        painter.fillRect(tinted.rect(), color)
+        painter.end()
+
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.SmoothPixmapTransform, True)
+        side = self.ICON
+        painter.drawPixmap(
+            (self.width() - side) // 2, (self.height() - side) // 2, side, side, tinted
+        )
+        painter.end()
+
+
 class FooterBar(QFrame):
-    """窗口右下角的一行辅助链接：GitHub 仓库地址 + 赞赏入口。
+    """窗口右下角的一行辅助链接：GitHub 图标 + 赞赏入口。
 
     刻意不做成通栏面板：不加底色、不加投影、内容一律贴右。整条通栏会把
-    视线从动作行拽走，右下角一行小链接既不抢焦点，也不多占一整行的高度。
+    视线从动作行拽走，右下角一行小图标既不抢焦点，也不多占一整行的高度。
     """
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         row = QHBoxLayout(self)
         row.setContentsMargins(0, 0, 2, 0)
-        row.setSpacing(12)
+        row.setSpacing(10)
 
         row.addStretch(1)  # 只留左侧弹性，内容贴着右下角
-        self.github_label = QLabel(
-            f'<a href="{GITHUB_URL}" '
-            f'style="color: {style.TEXT_DIM}; text-decoration: none;">'
-            f'github.com/gityongzhong/PixTrace</a>'
-        )
-        self.github_label.setOpenExternalLinks(True)
-        self.github_label.setToolTip(GITHUB_URL)
-        row.addWidget(self.github_label)
+        self.github_button = GitHubIconButton()
+        self.github_button.clicked.connect(self._open_repo)
+        row.addWidget(self.github_button)
 
         line = QFrame()
         line.setProperty("role", "separator")
@@ -157,6 +218,10 @@ class FooterBar(QFrame):
         self.support_button.setProperty("role", "flat")
         self.support_button.setToolTip("请作者喝杯咖啡")
         row.addWidget(self.support_button)
+
+    @staticmethod
+    def _open_repo() -> None:
+        QDesktopServices.openUrl(QUrl(GITHUB_URL))
 
 
 class MainWindow(QMainWindow):

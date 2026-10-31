@@ -19,9 +19,8 @@ from __future__ import annotations
 # ---------------------------------------------------------------- 字体
 # 苹果的 SF Pro 拿不到授权，Windows 上只能退到系统中文字体；字重靠 QSS 的
 # font-weight 微调，不要试图去模拟 SF 的字形。
-UI_FONT = (
-    '"Segoe UI", "Microsoft YaHei UI", "PingFang SC", "Helvetica Neue", sans-serif'
-)
+UI_FONT_FAMILIES = ("Segoe UI", "Microsoft YaHei UI", "PingFang SC", "Helvetica Neue")
+UI_FONT = ", ".join(f'"{name}"' for name in UI_FONT_FAMILIES) + ", sans-serif"
 MONO_FONT = '"Cascadia Mono", "Consolas", monospace'
 
 # ---------------------------------------------------------------- 色板
@@ -102,6 +101,21 @@ def mono_font(pixel_size: int = 12):
 
     font = QFont()
     font.setFamilies(["Cascadia Mono", "Consolas", "monospace"])
+    font.setPixelSize(pixel_size)
+    return font
+
+
+def ui_font(pixel_size: int = 13):
+    """界面正文字体，字号自定。
+
+    自绘控件必须显式用它、别用 widget.font()：QSS 里的 `QWidget { font-size: 13px }`
+    会在 polish 时盖掉 setFont()，自绘时按算出来的字号去量宽度、按 13px 去画，
+    文字就会溢出被裁掉（v0.6.1 的胶囊按钮踩过这个坑）。
+    """
+    from PySide6.QtGui import QFont
+
+    font = QFont()
+    font.setFamilies(list(UI_FONT_FAMILIES))
     font.setPixelSize(pixel_size)
     return font
 

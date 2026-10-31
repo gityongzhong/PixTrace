@@ -185,9 +185,10 @@ def _paint_coffee_cup(painter: QPainter, box: QRectF) -> None:
 class FooterButton(QPushButton):
     """右下角的次要入口：图标 + 文字的小胶囊。
 
-    尺寸照参考图取：高 26、圆角 7、左右内边距 9、图标 14、图标与文字间距 5。
-    底色（PILL_BG）比窗体亮一档、比工具条的灰色按钮暗一档——它是次要入口，
-    不该和「开始处理」抢注意力。
+    尺寸照参考图取：高 26、圆角 7、左右内边距 9、图标 12、图标与文字间距 5。
+    文字 11px —— 比正文（13px）小一档：右下角是次要入口，字号不该和动作行里的
+    按钮一样大（用户 v0.6.2 反馈「右下角字号太大」，此前实际渲染是 13px）。
+    底色（PILL_BG）比窗体亮一档、比工具条的灰色按钮暗一档。
 
     自绘而不是 QSS + QIcon：悬停时底色、图标、文字要一起过渡，而 QSS 的
     伪状态切换是瞬时硬切；QIcon 每帧重建也比换画笔颜色贵（规矩见 anim.py）。
@@ -197,7 +198,8 @@ class FooterButton(QPushButton):
     RADIUS = 7
     PAD = 9
     GAP = 5
-    ICON = 14
+    ICON = 12
+    FONT = 11
 
     def __init__(self, text: str, kind: str, parent: QWidget | None = None) -> None:
         super().__init__(text, parent)
@@ -207,15 +209,14 @@ class FooterButton(QPushButton):
         self.setCursor(Qt.PointingHandCursor)
         self.setFocusPolicy(Qt.NoFocus)
 
-        font = self.font()
-        font.setPixelSize(12)
-        self.setFont(font)
+        # 字号必须自己攥在手里：QSS 的 font-size 会在 polish 时盖掉 setFont()
+        self._font = style.ui_font(self.FONT)
         self.setFixedHeight(self.HEIGHT)
         self.setFixedWidth(
             self.PAD * 2
             + self.ICON
             + self.GAP
-            + QFontMetrics(font).horizontalAdvance(text)
+            + QFontMetrics(self._font).horizontalAdvance(text)
         )
 
         self._tint = anim.TintAnimation(self)
@@ -263,6 +264,7 @@ class FooterButton(QPushButton):
             float(self.height()),
         )
         painter.setPen(foreground)
+        painter.setFont(self._font)
         painter.drawText(text_rect, Qt.AlignLeft | Qt.AlignVCenter, self.text())
         painter.end()
 

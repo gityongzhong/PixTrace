@@ -19,17 +19,19 @@ import sys
 import time
 from pathlib import Path
 
-from PySide6.QtCore import QSettings, QSize, Qt, QTimer, QUrl
+from PySide6.QtCore import QPointF, QRectF, QSettings, QSize, Qt, QTimer, QUrl
 from PySide6.QtGui import (
     QAction,
     QBrush,
     QColor,
     QDesktopServices,
+    QFontMetrics,
     QIcon,
     QKeySequence,
-    QShortcut,
-    QPixmap,
     QPainter,
+    QPainterPath,
+    QPixmap,
+    QShortcut,
 )
 from PySide6.QtWidgets import (
     QAbstractItemView,
@@ -135,25 +137,87 @@ class DropBar(QFrame):
         self.label.setText(text)
 
 
-class GitHubIconButton(QPushButton):
-    """右下角的 GitHub 图标按钮：官方 mark 剪影，随主题着色，点击打开仓库。
+def _paint_coffee_cup(painter: QPainter, box: QRectF) -> None:
+    """画一只外卖纸杯（白盖 + 蓝杯身 + 咖啡色小标）。
 
-    图标是 scripts/make_git_icon.py 生成的白色剪影 PNG（assets/github.png），
-    绘制时用 SourceIn 染成目标色——常态灰、悬停提亮、按下取强调色，一张资源
-    全覆盖；也因此不用为一个小图标把 QtSvg 请回运行时（spec 已剔除）。
+    参考图里「支持作者」用的是一枚彩色小杯。这里既不放 emoji 也不放 PNG：
+    emoji 的字形属于系统字体（不可再分发，也不保证每台机器都渲染成彩色），
+    而矢量自绘任意 DPI 都干净、零资源、零许可负担。坐标全按 box 取比例，
+    改尺寸不用改数字。
+    """
+    w, h = box.width(), box.height()
+    x0, y0 = box.left(), box.top()
 
-    20px 的图标配 26px 的控件：多出来的一圈是点击热区，小图标不好点中。
+    def at(fx: float, fy: float) -> QPointF:
+        return QPointF(x0 + fx * w, y0 + fy * h)
+
+    painter.save()
+    painter.setPen(Qt.NoPen)
+
+    # 杯身：上宽下窄，底角收圆
+    body = QPainterPath()
+    body.moveTo(at(0.17, 0.27))
+    body.lineTo(at(0.83, 0.27))
+    body.lineTo(at(0.75, 0.92))
+    body.quadTo(at(0.74, 0.99), at(0.68, 0.99))
+    body.lineTo(at(0.32, 0.99))
+    body.quadTo(at(0.26, 0.99), at(0.25, 0.92))
+    body.closeSubpath()
+    painter.setBrush(QColor("#2f6fd0"))
+    painter.drawPath(body)
+
+    # 杯口内沿：一条更深的蓝，小尺寸下才看得出「这是个开口」
+    painter.setBrush(QColor("#24589f"))
+    painter.drawRect(QRectF(x0 + 0.19 * w, y0 + 0.28 * h, 0.62 * w, 0.05 * h))
+
+    # 杯盖：白色扁圆角块，比杯身宽一点，压在杯口上
+    painter.setBrush(QColor("#f2f3f5"))
+    painter.drawRoundedRect(
+        QRectF(x0 + 0.09 * w, y0 + 0.07 * h, 0.82 * w, 0.20 * h), 0.07 * w, 0.07 * h
+    )
+
+    # 杯身上的咖啡色小标
+    painter.setBrush(QColor("#8a4a26"))
+    painter.drawEllipse(QRectF(x0 + 0.43 * w, y0 + 0.48 * h, 0.15 * w, 0.20 * h))
+    painter.restore()
+
+
+class FooterButton(QPushButton):
+    """右下角的次要入口：图标 + 文字的小胶囊。
+
+    尺寸照参考图取：高 26、圆角 7、左右内边距 9、图标 14、图标与文字间距 5。
+    底色（PILL_BG）比窗体亮一档、比工具条的灰色按钮暗一档——它是次要入口，
+    不该和「开始处理」抢注意力。
+
+    自绘而不是 QSS + QIcon：悬停时底色、图标、文字要一起过渡，而 QSS 的
+    伪状态切换是瞬时硬切；QIcon 每帧重建也比换画笔颜色贵（规矩见 anim.py）。
     """
 
-    ICON = 18
+    HEIGHT = 26
+    RADIUS = 7
+    PAD = 9
+    GAP = 5
+    ICON = 14
 
-    def __init__(self, parent: QWidget | None = None) -> None:
-        super().__init__(parent)
+    def __init__(self, text: str, kind: str, parent: QWidget | None = None) -> None:
+        super().__init__(text, parent)
+        self._kind = kind
+        # 官方 mark 是白色剪影 PNG（scripts/make_git_icon.py 生成），绘制时染色
         self._mark = QPixmap(str(paths.resource_dir() / "assets" / "github.png"))
-        self.setFixedSize(26, 26)
         self.setCursor(Qt.PointingHandCursor)
         self.setFocusPolicy(Qt.NoFocus)
-        self.setToolTip(f"GitHub 项目主页 · {GITHUB_URL}")
+
+        font = self.font()
+        font.setPixelSize(12)
+        self.setFont(font)
+        self.setFixedHeight(self.HEIGHT)
+        self.setFixedWidth(
+            self.PAD * 2
+            + self.ICON
+            + self.GAP
+            + QFontMetrics(font).horizontalAdvance(text)
+        )
+
         self._tint = anim.TintAnimation(self)
         self._tint.changed.connect(lambda _value: self.update())
 
@@ -167,55 +231,74 @@ class GitHubIconButton(QPushButton):
 
     def paintEvent(self, event) -> None:
         # 不调 super().paintEvent()：QSS 的按钮底色会叠在自绘内容上（anim.py 规矩 1）
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing, True)
+        painter.setRenderHint(QPainter.SmoothPixmapTransform, True)
+
+        pressed = self.isDown()
+        # 内缩半像素：圆角边缘才不会被抗锯齿糊成两像素
+        # （QRect.adjusted 只吃 int，内缩半像素必须 QRectF）
+        rect = QRectF(self.rect()).adjusted(0.5, 0.5, -0.5, -0.5)
+        background = (
+            QColor(style.PILL_PRESSED)
+            if pressed
+            else anim.mix(style.PILL_BG, style.PILL_HOVER, self._tint.value)
+        )
+        painter.setPen(Qt.NoPen)
+        painter.setBrush(background)
+        painter.drawRoundedRect(rect, self.RADIUS, self.RADIUS)
+
+        level = 1.0 if pressed else self._tint.value
+        foreground = anim.mix(style.PILL_TEXT, style.TEXT, level)
+        icon = QRectF(self.PAD, (self.height() - self.ICON) / 2.0, self.ICON, self.ICON)
+        if self._kind == "github":
+            self._paint_mark(painter, icon, foreground)
+        else:
+            _paint_coffee_cup(painter, icon)
+
+        text_rect = QRectF(
+            icon.right() + self.GAP,
+            0.0,
+            self.width() - (icon.right() + self.GAP) - self.PAD,
+            float(self.height()),
+        )
+        painter.setPen(foreground)
+        painter.drawText(text_rect, Qt.AlignLeft | Qt.AlignVCenter, self.text())
+        painter.end()
+
+    def _paint_mark(self, painter: QPainter, target: QRectF, color: QColor) -> None:
         if self._mark.isNull():
             return
-        if self.isDown():
-            color = QColor(style.ACCENT_HILIGHT)
-        else:
-            color = anim.mix(style.TEXT_FAINT, style.TEXT_DIM, self._tint.value)
-
         tinted = QPixmap(self._mark.size())
         tinted.fill(Qt.transparent)
-        painter = QPainter(tinted)
-        painter.drawPixmap(0, 0, self._mark)
-        painter.setCompositionMode(QPainter.CompositionMode_SourceIn)
-        painter.fillRect(tinted.rect(), color)
-        painter.end()
-
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.SmoothPixmapTransform, True)
-        side = self.ICON
-        painter.drawPixmap(
-            (self.width() - side) // 2, (self.height() - side) // 2, side, side, tinted
-        )
-        painter.end()
+        brush = QPainter(tinted)
+        brush.drawPixmap(0, 0, self._mark)
+        brush.setCompositionMode(QPainter.CompositionMode_SourceIn)
+        brush.fillRect(tinted.rect(), color)
+        brush.end()
+        painter.drawPixmap(target, tinted, QRectF(tinted.rect()))
 
 
 class FooterBar(QFrame):
-    """窗口右下角的一行辅助链接：GitHub 图标 + 赞赏入口。
+    """窗口右下角的一行次要入口：GitHub + 支持作者，两枚同规格胶囊。
 
     刻意不做成通栏面板：不加底色、不加投影、内容一律贴右。整条通栏会把
-    视线从动作行拽走，右下角一行小图标既不抢焦点，也不多占一整行的高度。
+    视线从动作行拽走，右下角两枚小胶囊既不抢焦点，也不多占一整行的高度。
     """
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         row = QHBoxLayout(self)
-        row.setContentsMargins(0, 0, 2, 0)
-        row.setSpacing(10)
+        row.setContentsMargins(0, 0, 0, 0)  # 右缘与上方面板对齐（面板外留白 10）
+        row.setSpacing(8)
 
         row.addStretch(1)  # 只留左侧弹性，内容贴着右下角
-        self.github_button = GitHubIconButton()
+        self.github_button = FooterButton("GitHub", "github")
+        self.github_button.setToolTip(f"GitHub 项目主页 · {GITHUB_URL}")
         self.github_button.clicked.connect(self._open_repo)
         row.addWidget(self.github_button)
 
-        line = QFrame()
-        line.setProperty("role", "separator")
-        line.setFixedSize(1, 12)
-        row.addWidget(line)
-
-        self.support_button = QPushButton("赞赏")
-        self.support_button.setProperty("role", "flat")
+        self.support_button = FooterButton("支持作者", "coffee")
         self.support_button.setToolTip("请作者喝杯咖啡")
         row.addWidget(self.support_button)
 

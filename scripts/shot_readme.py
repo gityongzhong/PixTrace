@@ -7,7 +7,7 @@
 - 素材会先复制到 .shots/readme_demo/（.shots 不入库），处理结果也落在那里，
   不碰原图所在目录；建议选主体清晰、背景干净的图片，抠图对比效果最好。
 - 会真实跑一遍高精模型（isnet）批处理，需要 models/ 下有模型文件。
-- 建议加 QT_SCALE_FACTOR=2 运行：窗口逻辑尺寸不变（860x560），
+- 建议加 QT_SCALE_FACTOR=2 运行：窗口逻辑尺寸不变（760x500），
   输出像素翻倍（1720x1120），README 里显示更清晰。
 """
 
@@ -58,7 +58,13 @@ def main(argv: list[str]) -> int:
 
     # 展示图必须呈现默认状态：清掉历史运行留下的参数与几何记忆
     store = QSettings("pixtrace", "pixtrace")
-    for key in ("panel/state_json", "panel/state", "window/geometry", "window/geometry2"):
+    for key in (
+        "panel/state_json",
+        "panel/state",
+        "window/geometry",
+        "window/geometry2",
+        "window/geometry3",
+    ):
         store.remove(key)
     store.sync()
 

@@ -43,6 +43,7 @@ def main() -> int:
     store.remove("panel/state")
     store.remove("window/geometry")
     store.remove("window/geometry2")
+    store.remove("window/geometry3")
     store.sync()
 
     OUT_DIR.mkdir(exist_ok=True)

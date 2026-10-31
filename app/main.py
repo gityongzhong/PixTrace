@@ -182,6 +182,15 @@ def _uicheck(out_path: Path | None = None) -> int:
     app.setOrganizationName("pixtrace")
     style.apply(app)
 
+    # 先清掉几何记忆：否则本机上次关窗的尺寸会盖掉默认尺寸，
+    # 「验默认开窗大小」这件事就失去意义（这是诊断模式，改掉记忆无所谓）。
+    from PySide6.QtCore import QSettings
+
+    store = QSettings("pixtrace", "pixtrace")
+    for key in ("window/geometry", "window/geometry2", "window/geometry3"):
+        store.remove(key)
+    store.sync()
+
     window = MainWindow()
     # 不覆盖尺寸：uicheck 要验的就是真实默认开窗尺寸
     window.show()

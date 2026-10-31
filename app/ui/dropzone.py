@@ -26,7 +26,9 @@ from . import anim, style
 GLYPH = 60
 CORNER = 10  # 与 style.py 里 droparea 的圆角一致
 DEFAULT_TITLE = "把图片或文件夹拖到这里"
-DEFAULT_HINT = "支持 PNG / JPG / WebP / BMP / TIFF · 可一次拖入整个文件夹"
+# v0.6.4 起窗口收到 760×500，拖拽区只有约 450px 可用宽度：原来的一整行
+# （540px）会被两边各切掉半截字。改成固定的两行，窄窗口下也读得通顺。
+DEFAULT_HINT = "支持 PNG / JPG / WebP / BMP / TIFF\n可一次拖入整个文件夹"
 
 
 def _glyph() -> QPixmap:
@@ -103,6 +105,8 @@ class DropArea(QFrame):
         self.hint_label = QLabel(DEFAULT_HINT)
         self.hint_label.setProperty("role", "hint")
         self.hint_label.setAlignment(Qt.AlignCenter)
+        # 兜底：文案本身已按两行写死，万一以后改长或窗口再窄，让它换行而不是被裁
+        self.hint_label.setWordWrap(True)
         column.addWidget(self.hint_label)
 
         column.addSpacing(20)

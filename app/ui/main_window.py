@@ -76,11 +76,11 @@ SRC_ROLE = Qt.UserRole
 REPLAN_DELAY_MS = 200
 TITLE = "PixTrace · 去背景"
 ROW_HEIGHT = 32  # 苹果深色的列表行更松（原 30）
-DEFAULT_SIZE = (860, 560)  # 开窗尺寸
-MIN_SIZE = (860, 560)  # 下限，再小右侧菜单区会挤到换行
+DEFAULT_SIZE = (760, 500)  # 开窗尺寸
+MIN_SIZE = (740, 480)  # 下限，再小右侧菜单区会挤到换行
 SIDEBAR_W = 232  # 右侧菜单区定宽：跟着内容变会让人每次开窗重新找按钮
-GEOMETRY_KEY = "window/geometry2"  # 尾号跟默认尺寸策略走，改尺寸就 +1
-LEGACY_GEOMETRY_KEY = "window/geometry"
+GEOMETRY_KEY = "window/geometry3"  # 尾号跟默认尺寸策略走，改尺寸就 +1
+LEGACY_GEOMETRY_KEYS = ("window/geometry", "window/geometry2")
 GITHUB_URL = "https://github.com/gityongzhong/PixTrace"
 
 
@@ -116,11 +116,25 @@ class DropBar(QFrame):
         self.label.setAlignment(Qt.AlignCenter)
         row.addWidget(self.label)
 
-        self._tint = anim.TintAnimation(self)
-        self._tint.changed.connect(self._on_tint)
+        # 完整文案留一份：窗口收窄后按宽度省略，长句不会被两边切掉半截字
+        self._full = self.label.text()
 
-    def _on_tint(self, _value: float) -> None:
-        self.update()
+        self._tint = anim.TintAnimation(self)
+        self._tint.changed.connect(lambda _value: self.update())
+
+    def resizeEvent(self, event) -> None:  # noqa: N802
+        self._elide()
+        super().resizeEvent(event)
+
+    def _elide(self) -> None:
+        metrics = self.label.fontMetrics()
+        width = max(0, self.width() - 24)
+        self.label.setText(metrics.elidedText(self._full, Qt.ElideRight, width))
+
+    def set_message(self, text: str) -> None:
+        self._full = text
+        self._elide()
+        self.label.setToolTip(text)
 
     def set_active(self, active: bool) -> None:
         self._tint.to(1.0 if active else 0.0)
@@ -653,10 +667,11 @@ class MainWindow(QMainWindow):
             self.dropbar.set_message(DEFAULT_DROP_TITLE)
             self.drop_area.set_message(DEFAULT_DROP_TITLE, DEFAULT_DROP_HINT)
         elif not self._tasks:
-            self.dropbar.set_message("未找到可处理的图片（支持 PNG / JPG / WebP / BMP / TIFF）")
+            # 提示条只有一行（左右各留 12px），长句会被省略；格式说明放在下面的大字区
+            self.dropbar.set_message("这个文件夹里没有可处理的图片")
             self.drop_area.set_message(
                 "没找到可处理的图片",
-                "支持 PNG / JPG / WebP / BMP / TIFF，换个文件夹或直接拖入图片文件",
+                "支持 PNG / JPG / WebP / BMP / TIFF\n换个文件夹，或直接拖入图片文件",
             )
         else:
             self.dropbar.set_message("已就绪 · 还可以继续拖入图片或文件夹")
@@ -967,11 +982,11 @@ class MainWindow(QMainWindow):
 
     # --------------------------------------------------------- 配置持久化
     def _restore_state(self) -> None:
-        # 键名带版本号：默认尺寸从 1080×720 收到 860×560 后，老记忆会把窗口
-        # 又拉回大尺寸，所以在键名上翻一代（geometry → geometry2）让老值作废。
-        # 用户此后的手动调整仍会被记住。
-        if self._store.contains(LEGACY_GEOMETRY_KEY):
-            self._store.remove(LEGACY_GEOMETRY_KEY)
+        # 键名带版本号：默认尺寸每次收紧（1080×720 → 860×560 → 760×500）都要
+        # 翻一代，否则老记忆会把窗口又拉回大尺寸。用户此后的手动调整仍会被记住。
+        for legacy in LEGACY_GEOMETRY_KEYS:
+            if self._store.contains(legacy):
+                self._store.remove(legacy)
 
         geometry = self._store.value(GEOMETRY_KEY)
         if geometry is not None:

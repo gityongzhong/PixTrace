@@ -214,7 +214,7 @@ class FooterButton(QPushButton):
     伪状态切换是瞬时硬切；QIcon 每帧重建也比换画笔颜色贵（规矩见 anim.py）。
     """
 
-    HEIGHT = 26
+    HEIGHT = style.PILL_H  # 高度与 QSS 的 #pill min/max-height 同源，见 style.PILL_H
     RADIUS = 7
     PAD = 9
     GAP = 5
@@ -224,6 +224,9 @@ class FooterButton(QPushButton):
     def __init__(self, text: str, kind: str, parent: QWidget | None = None) -> None:
         super().__init__(text, parent)
         self._kind = kind
+        # objectName 供 QSS 单独清掉通用 QPushButton 的 padding / min-height，
+        # 否则胶囊会被撑到 34px 并溢出父容器底部（见 style.py 的 #pill 段）
+        self.setObjectName("pill")
         # 官方 mark 是白色剪影 PNG（scripts/make_git_icon.py 生成），绘制时染色
         self._mark = QPixmap(str(paths.resource_dir() / "assets" / "github.png"))
         self.setCursor(Qt.PointingHandCursor)

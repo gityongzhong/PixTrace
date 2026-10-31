@@ -49,6 +49,8 @@ PILL_BG = "#2c2c2e"      # 右下角胶囊按钮：比窗体亮一档、比工�
 PILL_HOVER = "#3a3a3c"
 PILL_PRESSED = "#262628"
 PILL_TEXT = "#c9c9ce"    # 胶囊文字：比正文灰一档，悬停提到 TEXT
+PILL_H = 26              # 胶囊高度：绘制的圆角矩形与 QSS 的 min/max-height 必须同源，
+                         # 否则 QSS 的通用按钮规则会把高度顶到 34px（见 #pill 注释）
 BG_GLYPH_TOP = "#2c2c2e"   # 空状态图标小卡
 BG_GLYPH_BOTTOM = "#242426"
 BORDER_GLYPH = "#3a3a3c"
@@ -207,6 +209,17 @@ QPushButton:pressed {{
 QPushButton:disabled {{
     color: {TEXT_FAINT};
     background-color: {BG_DISABLED};
+}}
+/* 右下角胶囊（FooterButton 自绘）：必须把上面通用规则的 padding + min-height 清掉。
+   6px 上下内边距 + 22px 最小高度 = 34px 最小高度，会把 setFixedHeight(26) 顶成 34px；
+   而外层布局仍按 26px 分配格子并居中，胶囊底部就溢出父容器 4px、被裁成平角
+   （v0.6.6 修的「右下角切掉一部分」）。自绘控件不吃 QSS 的底与内边距。 */
+QPushButton#pill {{
+    background: transparent;
+    border: none;
+    padding: 0px;
+    min-height: {PILL_H}px;
+    max-height: {PILL_H}px;
 }}
 /* 不给 QPushButton 全局 focus 描边：开局焦点落在「添加图片」上会常亮一整块蓝，
    像被误选中；focus 反馈交给输入类控件 */

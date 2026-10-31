@@ -372,9 +372,12 @@ class MainWindow(QMainWindow):
         central.setAttribute(Qt.WA_StyledBackground, True)
         self.setCentralWidget(central)
 
-        body = QHBoxLayout(central)
+        body = QVBoxLayout(central)
         body.setContentsMargins(10, 10, 10, 10)
-        body.setSpacing(10)
+        body.setSpacing(6)
+
+        row = QHBoxLayout()
+        row.setSpacing(10)
 
         # ---------------- 左：拖拽条 +（空状态拖拽区 ⇄ 任务列表）
         left = QVBoxLayout()
@@ -393,10 +396,16 @@ class MainWindow(QMainWindow):
         self.center_stack.addWidget(self.tree)
         left.addWidget(self.center_stack, 1)
 
-        body.addLayout(left, 1)
+        row.addLayout(left, 1)
 
         # ---------------- 右：菜单区（工具 / 背景 / 保存到 / 动作）
-        body.addWidget(self._build_sidebar())
+        row.addWidget(self._build_sidebar())
+        body.addLayout(row, 1)
+
+        # 底部入口单独成行：这样左右两栏的下边能落在同一条线上——
+        # 左侧卡片底边 = 「开始处理」底边，视线不会被 34px 的链接行错开。
+        self.action_bar = FooterBar()
+        body.addWidget(self.action_bar)
 
         self._build_actions()
 
@@ -422,10 +431,11 @@ class MainWindow(QMainWindow):
         return tree
 
     def _build_sidebar(self) -> QWidget:
-        """右侧菜单区：工具按钮 + 背景 + 保存到 + 状态/进度/动作 + 两个入口。
+        """右侧菜单区：工具按钮 + 背景 + 保存到 + 状态/进度/动作。
 
         整列定宽（SIDEBAR_W）：宽度跟着内容变会让人每次开窗都在重新找按钮。
         竖向顺序即操作顺序——先加图，再选背景和保存位置，最后点开始。
+        底部的 GitHub / 支持作者不在这列里（见 _build_ui 的底部行）。
         """
         side = QWidget()
         side.setFixedWidth(SIDEBAR_W)
@@ -491,13 +501,11 @@ class MainWindow(QMainWindow):
         action_box.addWidget(self.status_label)
         action_box.addWidget(self.progress)
         action_box.addLayout(button_row)
-        column.addWidget(self.action_row)
 
+        # 空白放在参数与动作之间，动作卡片永远贴着列底——它的下边于是和左侧
+        # 卡片的下边齐平；空白若留在列尾，两栏的下边就会差出一整行的高度。
         column.addStretch(1)
-
-        # 两个入口贴在列底：位置仍是窗口右下角
-        self.action_bar = FooterBar()
-        column.addWidget(self.action_bar)
+        column.addWidget(self.action_row)
         return side
 
     def _build_actions(self) -> None:

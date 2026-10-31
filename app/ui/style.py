@@ -1,16 +1,11 @@
-"""界面主题（流晷暗色）。
+"""界面主题（苹果深色 · macOS Sonoma 取色）。
 
-v0.5.0 对齐用户上一款产品「流晷计时器」的设计语言，核心结论来自那次对比：
-对比度高不等于突兀——流晷的对比度比上一版 PixTrace 高得多，但很干净。区别在：
+v0.6.0 换成苹果深色：底色从「近黑」抬到中性深灰（#1c1c1e），面板比底色亮一档
+（#252527）浮起，强调色改系统蓝 #0A84FF，按钮改灰色填充胶囊、分隔线压到发丝级。
 
-- **底色够深**（#0f1013 近黑）：面板（#17181c）靠明度差自然浮起，
-  不需要「1px 边框 + 顶部高光 + 投影」三件套来证明层次。
-  之前几版的「突兀感」正是这些细碎装饰叠出来的；本版把边框和高光基本拿掉。
-- **强调色纯而收敛**（#1f7fff 亮蓝）：只出现在焦点处——选中行、主按钮、
-  单选点、链接。面积小而纯，所以亮也不吵。上一版把蓝压灰（#4171cd）
-  治标不治本，界面反而发闷。
-- **选中 = 实心亮蓝块 + 白字**（流晷式），不再用暗蓝底灰字。
-- 形态放宽：圆角 8/10，按钮 min-height 22。
+这个决定和 v0.3.1 那次「苹果风被否」不冲突——那次踩的是浅色 + 大圆角 + 毛玻璃
+三件套，跟工具软件的调性打架；这次只借苹果深色的**取色与层次逻辑**，布局、
+动效、交互全部沿用流晷那套已经验证过的骨架，所以只是换皮，不是重做。
 
 仍然把 QSS 写成 Python 常量而不是 .qss 文件：打包时不必处理资源路径
 （PyInstaller 对数据文件的路径处理是个常见的坑）。
@@ -22,6 +17,8 @@ QGraphicsDropShadowEffect 补。动画/自绘过渡见 app/ui/anim.py。
 from __future__ import annotations
 
 # ---------------------------------------------------------------- 字体
+# 苹果的 SF Pro 拿不到授权，Windows 上只能退到系统中文字体；字重靠 QSS 的
+# font-weight 微调，不要试图去模拟 SF 的字形。
 UI_FONT = (
     '"Segoe UI", "Microsoft YaHei UI", "PingFang SC", "Helvetica Neue", sans-serif'
 )
@@ -30,55 +27,55 @@ MONO_FONT = '"Cascadia Mono", "Consolas", monospace'
 # ---------------------------------------------------------------- 色板
 # 常量名是既有接口（anim.py 自绘、main_window、preview、model_dialog 都引用），
 # 只换值不改名。
-BG = "#0f1013"          # 窗体底：近黑（流晷同款深度）
-BG_PANEL = "#17181c"    # 面板 / 卡片：靠明度差浮起，无边框
-BG_CARD = "#17181c"
-BG_WELL = "#121317"     # 凹槽：列表 / 表头
-BG_DROP = "#15161b"     # 空状态拖拽区：比面板亮一丝
-BG_DROP_ACTIVE = "#14294f"  # 拖拽悬停：带蓝的深底
-BG_INPUT = "#1e2025"
-BG_FILL = "#1e2025"     # 次级填充：进度槽、悬停底
-BG_HOVER = "#25272e"
-BG_PRESSED = "#191b1f"  # 按压变暗（比变亮更符合「按下去」的直觉）
-BTN_HOVER = "#25272e"
-BG_SELECTED = "#1f7fff"  # 列表选中：实心亮蓝块（流晷式）
-BORDER = "#1d1f24"      # 极淡：深底下只留一条「若隐若现」的线
-BORDER_STRONG = "#26282e"
-BORDER_HOVER = "#34373f"
-HILIGHT = "#1d1f24"     # 顶部高光已弱化到与边框同色：不再作为分层手段
-HILIGHT_STRONG = "#2b2e35"
-BG_DISABLED = "#15161a"
-BORDER_DISABLED = "#202227"
-BG_GLYPH_TOP = "#1b1e26"   # 空状态图标小卡
-BG_GLYPH_BOTTOM = "#13151b"
-BORDER_GLYPH = "#242835"
-HILIGHT_GLYPH = "#2c3242"
-TEXT = "#e8eaee"
-TEXT_DIM = "#9aa0ab"
-TEXT_FAINT = "#656b74"
+BG = "#1c1c1e"          # 窗体底：中性深灰（苹果深色的 windowBackground）
+BG_PANEL = "#252527"    # 面板 / 卡片：比底色亮一档，靠明度差浮起
+BG_CARD = "#252527"
+BG_WELL = "#1c1c1e"     # 凹槽：列表 / 表头与窗体同色（苹果列表不另铺底）
+BG_DROP = "#242426"     # 空状态拖拽区：比窗体亮一点，像一块可投放的板
+BG_DROP_ACTIVE = "#102c4a"  # 拖拽悬停：系统蓝的深色底
+BG_INPUT = "#3a3a3c"    # 控件填充：苹果的灰色胶囊按钮
+BG_FILL = "#3a3a3c"     # 次级填充：进度槽、悬停底
+BG_HOVER = "#3a3a3c"
+BG_PRESSED = "#2c2c2e"  # 按压变暗（比变亮更符合「按下去」的直觉）
+BTN_HOVER = "#48484a"
+BG_SELECTED = "#0a84ff"  # 列表选中：系统蓝实心块
+BORDER = "#38383a"      # 发丝线：只用来分栏，不用来「撑」层次
+BORDER_STRONG = "#3a3a3c"
+BORDER_HOVER = "#545456"
+HILIGHT = "#38383a"     # 顶部高光与边框同色：不作为分层手段
+HILIGHT_STRONG = "#48484a"
+BG_DISABLED = "#2c2c2e"
+BORDER_DISABLED = "#333335"
+BG_GLYPH_TOP = "#2c2c2e"   # 空状态图标小卡
+BG_GLYPH_BOTTOM = "#242426"
+BORDER_GLYPH = "#3a3a3c"
+HILIGHT_GLYPH = "#48484a"
+TEXT = "#f5f5f7"        # 苹果的 label
+TEXT_DIM = "#a1a1a6"    # secondaryLabel
+TEXT_FAINT = "#6e6e73"  # tertiaryLabel
 TEXT_ON_ACCENT = "#ffffff"
-ACCENT = "#1f7fff"      # 流晷同款亮蓝，只用在焦点处
-ACCENT_HOVER = "#3d90ff"
-ACCENT_PRESSED = "#1668d6"
-ACCENT_SOFT = "#142a52"  # 下拉列表等次级选中底
-ACCENT_HILIGHT = "#69a7ff"
-OK = "#3fd0a4"
-WARN = "#d9b36c"
-ERR = "#f28b82"
-OK_TEXT = "#43d9a8"
-WARN_TEXT = "#e3c084"
-ERR_TEXT = "#ff8078"
-PREVIEW_BG = "#0b0c0e"
-CHECKER_LIGHT = "#292c33"   # 预览窗透明区棋盘格
-CHECKER_DARK = "#1e2025"
+ACCENT = "#0a84ff"      # 系统蓝（深色模式），只用在焦点处
+ACCENT_HOVER = "#409cff"
+ACCENT_PRESSED = "#0060df"
+ACCENT_SOFT = "rgba(10, 132, 255, 0.20)"  # 下拉列表等次级选中底
+ACCENT_HILIGHT = "#64b5ff"
+OK = "#30d158"
+WARN = "#ffd60a"
+ERR = "#ff453a"
+OK_TEXT = "#30d158"
+WARN_TEXT = "#ffd60a"
+ERR_TEXT = "#ff453a"
+PREVIEW_BG = "#1c1c1e"
+CHECKER_LIGHT = "#2c2c2e"   # 预览窗透明区棋盘格
+CHECKER_DARK = "#242426"
 
-# 主窗口中央区：极淡的纵向渐变（底已近黑，跨度刻意很小）
-SURFACE_TOP = "#131419"
-SURFACE_BOTTOM = "#0c0d10"
+# 主窗口中央区：苹果深色是平的，不再做纵向渐变
+SURFACE_TOP = "#1c1c1e"
+SURFACE_BOTTOM = "#1c1c1e"
 
-FOCUS_RING = "rgba(31, 127, 255, 0.5)"
-TRACK = "rgba(255, 255, 255, 0.07)"
-ROW_HOVER = "rgba(255, 255, 255, 0.05)"
+FOCUS_RING = "rgba(10, 132, 255, 0.5)"
+TRACK = "rgba(255, 255, 255, 0.12)"
+ROW_HOVER = "rgba(255, 255, 255, 0.06)"
 
 STATUS_COLORS = {
     "等待": TEXT_FAINT,

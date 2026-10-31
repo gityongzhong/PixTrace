@@ -194,6 +194,29 @@ def _uicheck(out_path: Path | None = None) -> int:
     return 0 if ok else 1
 
 
+def _use_dark_titlebar(window) -> None:
+    """Windows：把系统标题栏也压成深色。
+
+    深色界面配一条白标题栏，看起来像两个程序拼在一起。DWMWA_USE_IMMERSIVE_DARK_MODE
+    在 Win10 20H1 之后是 20，更早是 19，两个都试；失败就静默放弃（只是不好看，不影响功能）。
+    """
+    if sys.platform != "win32":
+        return
+    try:
+        import ctypes
+
+        hwnd = int(window.winId())
+        value = ctypes.c_int(1)
+        for attribute in (20, 19):
+            result = ctypes.windll.dwmapi.DwmSetWindowAttribute(
+                hwnd, attribute, ctypes.byref(value), ctypes.sizeof(value)
+            )
+            if result == 0:
+                break
+    except (OSError, AttributeError):
+        pass
+
+
 def _run_gui() -> int:
     from PySide6.QtWidgets import QApplication
 
@@ -226,6 +249,7 @@ def _run_gui() -> int:
 
     window = MainWindow()
     window.show()
+    _use_dark_titlebar(window)
     return app.exec()
 
 

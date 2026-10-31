@@ -1,5 +1,9 @@
 """设置面板：界面上唯一的参数区——背景（透明 / 纯色）+ 保存位置。
 
+v0.6.3 起界面改成左右分栏，本面板落在右侧 232px 的菜单区里，所以是**竖排**：
+小标题 + 控件各占一行。横排（背景 | 透明 | 纯色 | 色块 | 保存到）只在它横跨
+整个窗口的年代成立，收进一列后会把每个控件挤成半个字。
+
 产品定位就是两个动作——去掉背景、换成纯色背景，所以模型档位、输出格式、
 并发数、羽化半径这些工程参数一律不出现在界面上，而是固定策略：
 
@@ -10,8 +14,8 @@
 
 这些策略都写在 build_options() 里，想改只需改这一处。
 
-本面板只管参数：状态文字、进度条与执行按钮在主窗口的独立动作行里
-（挤在这一行行尾会把「保存到」压得没地方，也不符合「先选参数再动手」的顺序）。
+本面板只管参数：状态文字、进度条与执行按钮在菜单区下方单独一块动作卡片里
+（参数与动作分开，符合「先选参数再动手」的顺序）。
 """
 
 from __future__ import annotations
@@ -60,43 +64,61 @@ class SettingsPanel(QFrame):
 
     # ------------------------------------------------------------ 构建
     def _build(self) -> None:
-        row = QHBoxLayout(self)
-        row.setContentsMargins(12, 9, 12, 9)
-        row.setSpacing(10)
+        """竖排：小标题 + 控件，宽度只有右侧菜单区那么一列。
 
-        label = QLabel("背景")
-        row.addWidget(label)
+        以前是横排的一整行（背景 | 透明 | 纯色 | 色块 | 保存到），那是因为
+        它横跨整个窗口；现在归到右侧菜单区，横排会把每项都挤成半个字。
+        """
+        column = QVBoxLayout(self)
+        column.setContentsMargins(12, 10, 12, 12)
+        column.setSpacing(7)
+
+        column.addWidget(self._section("背景"))
+
+        bg_row = QHBoxLayout()
+        bg_row.setSpacing(10)
 
         self.bg_transparent = QRadioButton("透明")
         self.bg_transparent.setToolTip("去掉背景，输出带透明通道的 PNG")
-        row.addWidget(self.bg_transparent)
+        bg_row.addWidget(self.bg_transparent)
 
         self.bg_color = QRadioButton("纯色")
         self.bg_color.setToolTip("去掉背景后填充为指定颜色")
-        row.addWidget(self.bg_color)
+        bg_row.addWidget(self.bg_color)
+
+        bg_row.addStretch(1)
 
         self.color_button = QPushButton()
         self.color_button.setProperty("role", "swatch")
-        self.color_button.setFixedSize(72, 24)
+        self.color_button.setFixedSize(66, 22)
         self.color_button.setToolTip("点击选择背景颜色")
-        row.addWidget(self.color_button)
+        bg_row.addWidget(self.color_button)
+        column.addLayout(bg_row)
 
-        row.addSpacing(4)
-        row.addWidget(self._separator())
-        row.addSpacing(4)
+        column.addSpacing(3)
+        column.addWidget(self._separator())
+        column.addSpacing(3)
+
+        column.addWidget(self._section("保存到"))
 
         self.dest_button = QPushButton()
         self.dest_button.setCursor(Qt.PointingHandCursor)
         self.dest_button.setToolTip("结果保存到哪里")
-        row.addWidget(self.dest_button)
+        self.dest_button.setMinimumHeight(26)
+        column.addWidget(self.dest_button)
 
-        row.addStretch(1)
         self._apply_color_style()
+
+    @staticmethod
+    def _section(text: str) -> QLabel:
+        label = QLabel(text)
+        label.setProperty("role", "section")
+        return label
 
     def _separator(self) -> QWidget:
         line = QFrame()
         line.setProperty("role", "separator")
-        line.setFixedSize(1, 18)
+        line.setFixedHeight(1)
         return line
 
     # ------------------------------------------------------------ 交互
@@ -142,13 +164,14 @@ class SettingsPanel(QFrame):
             self.changed.emit()
 
     def _refresh_dest(self) -> None:
-        self.dest_button.setText(f"保存到：{self._dest_text()}")
+        self.dest_button.setText(self._dest_text())
+        self.dest_button.setToolTip(f"保存到：{self._dest_text(full=True)}")
 
-    def _dest_text(self) -> str:
+    def _dest_text(self, full: bool = False) -> str:
         if self._dest_mode == DEST_CUSTOM and self._custom_dir is not None:
             text = str(self._custom_dir)
-            if len(text) > 30:
-                text = "…" + text[-29:]
+            if not full and len(text) > 26:
+                text = "…" + text[-25:]
             return text
         return "原图所在文件夹"
 

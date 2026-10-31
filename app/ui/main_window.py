@@ -5,10 +5,14 @@
 所以这里也没有筛选器、没有重跑按钮：失败的项在列表里标红，直接再点一次「开始处理」
 就会重新处理（规划阶段会跳过已成功生成的输出）。
 
-布局自上而下：工具条 → [大拖拽区 ⇄ 任务列表] → 设置面板 → 动作行（状态/进度/取消/开始处理）
-→ 底部链接条。没有菜单栏、也没有工具条右侧的「设置」菜单：界面入口只有工具条的
-添加图片 / 添加文件夹 / 清空列表三个按钮（模型管理走 Ctrl+M，或「开始处理」时的兜底提示）。
-列表为空时 44px 提示条隐藏，整块内容区由 DropArea 接管。
+布局左右分栏（v0.6.3 起）：
+
+- **左**：44px 拖拽提示条 + [大拖拽区 ⇄ 任务列表] —— 放图、看进度都在这一侧
+- **右**：232px 定宽菜单区，自上而下是 添加图片 / 添加文件夹 / 清空列表 →
+  背景（透明 / 纯色 + 色块）/ 保存到 → 状态 + 进度 + 取消·开始处理 → 右下角两个入口
+
+没有菜单栏，也没有「设置」菜单：模型管理走 Ctrl+M，或「开始处理」时的兜底提示。
+列表为空时提示条隐藏，整块左侧由 DropArea 接管。
 """
 
 from __future__ import annotations
@@ -46,6 +50,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QProgressBar,
     QPushButton,
+    QSizePolicy,
     QStackedWidget,
     QTreeWidget,
     QTreeWidgetItem,
@@ -72,7 +77,8 @@ REPLAN_DELAY_MS = 200
 TITLE = "PixTrace · 去背景"
 ROW_HEIGHT = 32  # 苹果深色的列表行更松（原 30）
 DEFAULT_SIZE = (860, 560)  # 开窗尺寸
-MIN_SIZE = (860, 560)  # 下限，再小设置行会挤到换行
+MIN_SIZE = (860, 560)  # 下限，再小右侧菜单区会挤到换行
+SIDEBAR_W = 232  # 右侧菜单区定宽：跟着内容变会让人每次开窗重新找按钮
 GEOMETRY_KEY = "window/geometry2"  # 尾号跟默认尺寸策略走，改尺寸就 +1
 LEGACY_GEOMETRY_KEY = "window/geometry"
 GITHUB_URL = "https://github.com/gityongzhong/PixTrace"
@@ -351,31 +357,19 @@ class MainWindow(QMainWindow):
         central.setObjectName("surface")
         central.setAttribute(Qt.WA_StyledBackground, True)
         self.setCentralWidget(central)
-        wrap = QVBoxLayout(central)
-        wrap.setContentsMargins(10, 0, 10, 7)
-        wrap.setSpacing(9)
 
-        wrap.addWidget(self._build_toolbar())
+        body = QHBoxLayout(central)
+        body.setContentsMargins(10, 10, 10, 10)
+        body.setSpacing(10)
+
+        # ---------------- 左：拖拽条 +（空状态拖拽区 ⇄ 任务列表）
+        left = QVBoxLayout()
+        left.setSpacing(9)
 
         self.dropbar = DropBar()
-        wrap.addWidget(self.dropbar)
+        left.addWidget(self.dropbar)
 
-        self.tree = QTreeWidget()
-        self.tree.setHeaderLabels(list(COLUMNS))
-        self.tree.setRootIsDecorated(False)
-        self.tree.setUniformRowHeights(True)
-        # 交替行底色与列表底只差几个灰阶，看着只是脏，改用悬停高亮区分
-        self.tree.setAlternatingRowColors(False)
-        self.tree.setSelectionMode(QAbstractItemView.ExtendedSelection)
-        self.tree.setSelectionBehavior(QAbstractItemView.SelectRows)
-        self.tree.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        self.tree.setVerticalScrollMode(QAbstractItemView.ScrollPerPixel)
-        header = self.tree.header()
-        header.setSectionResizeMode(0, QHeaderView.Stretch)
-        header.setSectionResizeMode(1, QHeaderView.Fixed)
-        header.setSectionResizeMode(2, QHeaderView.Fixed)
-        self.tree.setColumnWidth(1, 90)
-        self.tree.setColumnWidth(2, 76)
+        self.tree = self._build_tree()
 
         # 列表为空时整块内容区就是拖拽区，有输入后换成任务列表
         self.drop_area = DropArea()
@@ -383,20 +377,77 @@ class MainWindow(QMainWindow):
         self.center_stack = QStackedWidget()
         self.center_stack.addWidget(self.drop_area)
         self.center_stack.addWidget(self.tree)
-        wrap.addWidget(self.center_stack, 1)
+        left.addWidget(self.center_stack, 1)
+
+        body.addLayout(left, 1)
+
+        # ---------------- 右：菜单区（工具 / 背景 / 保存到 / 动作）
+        body.addWidget(self._build_sidebar())
+
+        self._build_actions()
+
+    def _build_tree(self) -> QTreeWidget:
+        tree = QTreeWidget()
+        tree.setHeaderLabels(list(COLUMNS))
+        tree.setRootIsDecorated(False)
+        tree.setUniformRowHeights(True)
+        # 交替行底色与列表底只差几个灰阶，看着只是脏，改用悬停高亮区分
+        tree.setAlternatingRowColors(False)
+        tree.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        tree.setSelectionBehavior(QAbstractItemView.SelectRows)
+        tree.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        tree.setVerticalScrollMode(QAbstractItemView.ScrollPerPixel)
+        header = tree.header()
+        # 默认最后一列会自己撑满，右侧菜单区一上，「耗时」就会拉出去一大片空白
+        header.setStretchLastSection(False)
+        header.setSectionResizeMode(0, QHeaderView.Stretch)
+        header.setSectionResizeMode(1, QHeaderView.Fixed)
+        header.setSectionResizeMode(2, QHeaderView.Fixed)
+        tree.setColumnWidth(1, 84)
+        tree.setColumnWidth(2, 68)
+        return tree
+
+    def _build_sidebar(self) -> QWidget:
+        """右侧菜单区：工具按钮 + 背景 + 保存到 + 状态/进度/动作 + 两个入口。
+
+        整列定宽（SIDEBAR_W）：宽度跟着内容变会让人每次开窗都在重新找按钮。
+        竖向顺序即操作顺序——先加图，再选背景和保存位置，最后点开始。
+        """
+        side = QWidget()
+        side.setFixedWidth(SIDEBAR_W)
+        column = QVBoxLayout(side)
+        column.setContentsMargins(0, 0, 0, 0)
+        column.setSpacing(9)
+
+        # 工具：添加图片 / 添加文件夹 / 清空列表
+        tools = QFrame()
+        tools.setProperty("role", "panel")
+        effects.add_card_shadow(tools)
+        tool_box = QVBoxLayout(tools)
+        tool_box.setContentsMargins(10, 10, 10, 10)
+        tool_box.setSpacing(7)
+        self.toolbar_add_files = QPushButton("添加图片")
+        self.toolbar_add_folder = QPushButton("添加文件夹")
+        self.toolbar_clear = QPushButton("清空列表")
+        for button in (
+            self.toolbar_add_files,
+            self.toolbar_add_folder,
+            self.toolbar_clear,
+        ):
+            tool_box.addWidget(button)
+        column.addWidget(tools)
 
         self.settings_panel = SettingsPanel()
         effects.add_card_shadow(self.settings_panel)
-        wrap.addWidget(self.settings_panel)
+        column.addWidget(self.settings_panel)
 
-        # 状态 + 进度 + 动作单独占一排：挤在设置行尾会把「保存到」压得没地方，
-        # 参数与动作分开也更符合阅读顺序（先选参数，再动手）
+        # 状态 + 进度 + 动作：竖排，宽度只有一列，所以进度条铺满、按钮同行
         self.action_row = QFrame()
         self.action_row.setProperty("role", "panel")
         effects.add_card_shadow(self.action_row)
-        action_row = QHBoxLayout(self.action_row)
-        action_row.setContentsMargins(12, 8, 12, 8)
-        action_row.setSpacing(12)
+        action_box = QVBoxLayout(self.action_row)
+        action_box.setContentsMargins(10, 10, 10, 11)
+        action_box.setSpacing(8)
 
         self.status_label = QLabel("就绪")
         self.status_label.setProperty("role", "hint")
@@ -408,7 +459,8 @@ class MainWindow(QMainWindow):
         self.progress.setRange(0, 100)
         self.progress.setValue(0)
         self.progress.setTextVisible(False)
-        self.progress.setFixedSize(QSize(220, 8))
+        self.progress.setFixedHeight(6)
+        self.progress.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         # 进度值滚动过去，而不是一格一格地蹦
         self._progress_roll = anim.ValueRoller(self.progress, "value", self)
 
@@ -416,36 +468,23 @@ class MainWindow(QMainWindow):
         self.cancel_button.setEnabled(False)
         self.start_button = QPushButton("开始处理")
         self.start_button.setProperty("role", "primary")
-        self.start_button.setMinimumWidth(104)
 
-        # 状态文字吃掉中间全部弹性宽度（超长自动省略），进度条贴着动作按钮，
-        # 「看着跑完 → 立刻再跑一轮」的视线动线是连续的
-        action_row.addWidget(self.status_label, 1)
-        action_row.addWidget(self.progress, 0, Qt.AlignVCenter)
-        action_row.addWidget(self.cancel_button)
-        action_row.addWidget(self.start_button)
-        wrap.addWidget(self.action_row)
+        button_row = QHBoxLayout()
+        button_row.setSpacing(8)
+        button_row.addWidget(self.cancel_button, 0)
+        button_row.addWidget(self.start_button, 1)
 
-        # 右下角链接行：无底色无投影，紧贴底部
+        action_box.addWidget(self.status_label)
+        action_box.addWidget(self.progress)
+        action_box.addLayout(button_row)
+        column.addWidget(self.action_row)
+
+        column.addStretch(1)
+
+        # 两个入口贴在列底：位置仍是窗口右下角
         self.action_bar = FooterBar()
-        wrap.addWidget(self.action_bar)
-
-        self._build_actions()
-
-    def _build_toolbar(self) -> QWidget:
-        bar = QWidget()
-        bar.setObjectName("toolbar")
-        row = QHBoxLayout(bar)
-        row.setContentsMargins(0, 6, 0, 0)
-        row.setSpacing(8)
-
-        self.toolbar_add_files = QPushButton("添加图片")
-        self.toolbar_add_folder = QPushButton("添加文件夹")
-        self.toolbar_clear = QPushButton("清空列表")
-        for button in (self.toolbar_add_files, self.toolbar_add_folder, self.toolbar_clear):
-            row.addWidget(button)
-        row.addStretch(1)
-        return bar
+        column.addWidget(self.action_bar)
+        return side
 
     def _build_actions(self) -> None:
         """动作对象挂在窗口上：既没有菜单栏，也没有「设置」菜单。

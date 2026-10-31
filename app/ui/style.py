@@ -29,7 +29,7 @@ MONO_FONT = '"Cascadia Mono", "Consolas", monospace'
 BG = "#1c1c1e"          # 窗体底：中性深灰（苹果深色的 windowBackground）
 BG_PANEL = "#252527"    # 面板 / 卡片：比底色亮一档，靠明度差浮起
 BG_CARD = "#252527"
-BG_WELL = "#1c1c1e"     # 凹槽：列表 / 表头与窗体同色（苹果列表不另铺底）
+BG_WELL = "#252527"     # 列表 / 表头：v0.6.3 起左侧列表独立成一块卡片，与面板同色
 BG_DROP = "#242426"     # 空状态拖拽区：比窗体亮一点，像一块可投放的板
 BG_DROP_ACTIVE = "#102c4a"  # 拖拽悬停：系统蓝的深色底
 BG_INPUT = "#3a3a3c"    # 控件填充：苹果的灰色胶囊按钮
@@ -150,6 +150,11 @@ QLabel[role="hint"] {{
 QLabel[role="faint"] {{
     font-size: 11px;
     color: {TEXT_FAINT};
+}}
+/* 右侧菜单区的小标题（背景 / 保存到）：比正文灰一档，起分区作用不抢注意力 */
+QLabel[role="section"] {{
+    font-size: 11px;
+    color: {TEXT_DIM};
 }}
 QLabel[role="droptitle"] {{
     font-size: 16px;

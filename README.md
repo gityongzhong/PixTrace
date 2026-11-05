@@ -179,4 +179,11 @@ python scripts/build.py --selftest --portable    # onedir 构建 + 产物自检 
 
 ## 许可
 
-本项目代码以 MIT 许可发布。模型权重与第三方组件的许可见 `THIRD_PARTY_LICENSES.md`。
+**个人非商业用途免费** —— 可免费安装使用，可在个人之间转发原始安装包。
+
+**商业用途需授权** —— 含企业内部办公、嵌入商业产品、对外提供服务，请联系 hongyongzhong2020@126.com。
+
+**不提供源代码** —— 本软件为专有软件，仓库不对外公开；禁止反编译、逆向工程或分发修改版。
+
+详细条款见 [LICENSE](LICENSE)。
+模型权重与第三方组件仍遵循各自的原始许可，见 `THIRD_PARTY_LICENSES.md`。

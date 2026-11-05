@@ -1,21 +1,46 @@
-MIT License
+# PixTrace 免费使用许可（专有软件）
 
-Copyright (c) 2026 gityongzhong
+版权所有 (c) 2026 小洪師兄 Studio <hongyongzhong2020@126.com>
+保留所有权利。
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+本软件为**专有软件，不提供源代码**。下载、安装或使用本软件，即视为同意以下条款。
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+## 一、允许的使用
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+1. 个人出于**非商业目的**，可免费在任意数量的自有设备上安装与使用本软件，无需付费、无需注册。
+2. 可在个人之间免费转发本软件的**原始安装包**，须保持完整、未经修改，并附带本许可。
+
+## 二、需取得商业授权的情形
+
+下列情形须事先取得书面商业授权（联系 hongyongzhong2020@126.com）：
+
+1. 任何商业性使用，包括但不限于企业内部办公、生产经营、对外提供服务；
+2. 将本软件或其主要功能嵌入、捆绑到其他产品或服务中；
+3. 以本软件为基础制作衍生作品，或将其功能作为卖点对外提供。
+
+## 三、禁止事项
+
+1. 不得反编译、反汇编、逆向工程，或以任何方式试图获取源代码；
+2. 不得修改、破解，或去除版权声明与功能限制；
+3. 不得出租、出售、转授权本软件；
+4. 不得移除或规避本软件中的任何标识。
+
+## 四、免责声明
+
+本软件按「现状」提供，不附带任何明示或默示的担保，包括但不限于适销性与特定用途适用性。
+因使用或无法使用本软件造成的任何直接或间接损失，作者不承担责任。
+
+## 五、许可终止
+
+违反上述任一条款，本许可即自动终止，你须立即停止使用并删除全部副本。
+
+---
+
+## 关于早期版本
+
+本许可仅约束本软件的**当前及后续版本**。此前以 MIT 许可公开发布的版本，
+其授权不因本许可而改变——已依 MIT 条款获得授权的副本，仍可依 MIT 条款继续使用与分发。
+
+## 第三方组件
+
+本软件包含若干开源第三方组件，这些组件仍遵循各自的原始许可。
